@@ -12,6 +12,7 @@
       "jsonwebtoken": "8.3.0",
       "body-parser": "1.18.3",
       "request": "2.81.0",
-      "sha256": "0.2.0"
+      "sha256": "0.2.0",
+      "eth-lightwallet": "3.0.1"
   }
 }
