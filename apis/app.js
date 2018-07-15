@@ -228,9 +228,6 @@ app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
     var atomicSwap = atomicSwapContract.at(network.atomicSwapContractAddress);
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
-
-
-
     var secret = generateSecret();
 
     db.collection("networks").findOne({instanceId: req.body.toNetworkId}, function(err, node) {

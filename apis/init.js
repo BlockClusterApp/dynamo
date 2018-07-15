@@ -122,7 +122,8 @@ MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnec
                                                                         "constellationPubKey": constellationPublicKey,
                                                                         "nodeId": nodeId,
                                                                         "currentValidators": currentValidators,
-                                                                        "status": "running"
+                                                                        "status": "running",
+                                                                        lastPinged: Date.now()
                                                                     })
                                                                 }
                                                             })
@@ -186,7 +187,8 @@ MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnec
                                                                                                             "constellationPubKey": constellationPublicKey,
                                                                                                             "nodeId": nodeId,
                                                                                                             "currentValidators": currentValidators,
-                                                                                                            "status": "running"
+                                                                                                            "status": "running",
+                                                                                                            lastPinged: Date.now()
                                                                                                         })
                                                                                                     }
                                                                                                 })

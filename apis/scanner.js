@@ -855,10 +855,6 @@ MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnec
                                     set.connectedPeers = peers;
                                 }
 
-                                if(node.status !== "initializing") {
-                                    set.status = "running";
-                                }
-
                                 try {
                                     await updateDB(instanceId, set);
                                 } catch(e) {
@@ -869,33 +865,15 @@ MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnec
 
                             } catch(e) {
                                 console.log(e)
-                                try {
-                                    if(node.status !== "initializing") {
-                                        await updateDB(instanceId, {
-                                            status: "down"
-                                        });
-                                    }
-                                } catch(e) {
-                                    setTimeout(scan, 100)
-                                    return;
-                                }
                             }
+
+                            setTimeout(scan, 1000)
                         } else {
                             setTimeout(scan, 1000)
                             return;
                         }
                     } catch(e) {
                         console.log(e)
-                        try {
-                            if(node.status !== "initializing") {
-                                await updateDB(instanceId, {
-                                    status: "down"
-                                });
-                            }
-                        } catch(e) {
-                            setTimeout(scan, 1000)
-                            return;
-                        }
                     }
 
                     setTimeout(scan, 100)
