@@ -11,6 +11,10 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                     db.collection("networks").updateOne({instanceId: instanceId}, { $set: {status: "initializing"}}, function(err, res) {
                         process.exit(0);
                     });
+                } else if(node.status === "down") {
+                    db.collection("networks").updateOne({instanceId: instanceId}, { $set: {status: "running"}}, function(err, res) {
+                        process.exit(0);
+                    });
                 } else {
                     process.exit(0);
                 }
