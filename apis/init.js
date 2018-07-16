@@ -4,6 +4,7 @@ var Web3 = require("web3");
 var MongoClient = require("mongodb").MongoClient;
 var fs = require('fs');
 var lightwallet = require("eth-lightwallet");
+const Config = require('./config');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -43,7 +44,7 @@ async function upsertNetwork(query, set) {
     })
 }
 
-MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         db = database.db("admin");
 

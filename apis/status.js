@@ -1,11 +1,12 @@
 var MongoClient = require("mongodb").MongoClient;
+const Config = require('./config');
 const express = require('express')
 const app = express()
 
 let instanceId = process.env.instanceId;
 let db = null;
 
-MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         db = database.db("admin");
     }

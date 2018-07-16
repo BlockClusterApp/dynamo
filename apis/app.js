@@ -11,6 +11,7 @@ var BigNumber = require('bignumber.js');
 var jwt = require('jsonwebtoken');
 var Web3 = require("web3");
 var bodyParser = require('body-parser')
+const Config = require('./config');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -36,7 +37,7 @@ function addZeros(s, n) {
     return s;
 }
 
-MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         db = database.db("admin");
 

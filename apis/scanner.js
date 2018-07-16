@@ -4,6 +4,7 @@ var db = null;
 const request = require('request');
 var BigNumber = require('bignumber.js');
 var sha256 = require('sha256');
+const Config = require('./config');
 
 Array.prototype.remByVal = function(val) {
     for (var i = 0; i < this.length; i++) {
@@ -792,7 +793,7 @@ async function addPeers(web3, peers) {
 }
 
 //MongoClient.connect("mongodb://127.0.0.1:3001", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
-MongoClient.connect("mongodb://mongo.default.svc.cluster.local:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         db = database.db("admin");
         let accountsUnlocked = false;
