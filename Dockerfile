@@ -1,17 +1,13 @@
-FROM ubuntu:16.04
+FROM node:8.9.3
 EXPOSE 23000
 EXPOSE 8545
 EXPOSE 9001
 EXPOSE 6328
-RUN apt-get update && apt-get install -y --no-install-recommends apt-utils build-essential
+
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 RUN apt-get install -y libdb-dev libleveldb-dev libsodium-dev zlib1g-dev libtinfo-dev
-RUN apt-get install -y screen
-RUN apt-get install -y netcat
-RUN apt-get install -y git
-RUN apt-get install -y curl
-RUN apt-get install -y jq
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
+RUN apt-get install -y screen netcat git curl jq
+
 RUN mkdir ./smart-contracts
 ADD smart-contracts ./smart-contracts
 RUN mkdir ./apis
