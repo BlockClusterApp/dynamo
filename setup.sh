@@ -4,7 +4,7 @@ then
 	screen -d -m ./constellation.sh
 	sleep 5
 	screen -d -m ./quorum-node.sh
-	screen -d -m node apis/app.js
+	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
 	while true;
@@ -52,7 +52,7 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
 	screen -d -m ./quorum-node.sh $2 $3
-	screen -d -m node apis/app.js
+	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
 	while true;
@@ -100,7 +100,7 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
 	screen -d -m ./quorum-node.sh $2 $3 $4
-	screen -d -m node apis/app.js
+	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
 	while true;
