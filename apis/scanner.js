@@ -806,8 +806,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
                     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
 
-                    console.log("Block to Scan: " + blockToScan + " and is connected: " + web3.isConnected())
-
                     try {
 
                         if(accountsUnlocked === false) {
@@ -816,6 +814,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                         }
 
                         var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
+
+                        console.log(blockStatus)
 
                         if(blockStatus == true) {
                             try {
@@ -861,12 +861,14 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 try {
                                     await updateDB(instanceId, set);
                                 } catch(e) {
+                                    console.log("Error C \n")
                                     console.log(e)
                                     setTimeout(scan, 100)
                                     return;
                                 }
 
                             } catch(e) {
+                                console.log("Error B \n")
                                 console.log(e)
                             }
 
@@ -876,6 +878,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                             return;
                         }
                     } catch(e) {
+                        console.log("Error A \n")
                         console.log(e)
                     }
 
