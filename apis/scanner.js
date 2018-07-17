@@ -462,7 +462,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 		var assets = assetsContract.at(assetsContractAddress);
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
-            console.log(events)
 			if(error) {
 				reject(error);
 			} else {
@@ -806,6 +805,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                     let blockToScan = (node.blockToScan ? node.blockToScan : 0);
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
                     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
+
+                    console.log("Block to Scan: " + blockToScan + " and is connected: " + web3.isConnected())
 
                     try {
 
