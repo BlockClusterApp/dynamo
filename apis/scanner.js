@@ -196,6 +196,8 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 						resolve(false)
 					}
 				} else {
+                    console.log("Error inside fetchTxn at : " + Date.now())
+                    console.log(error)
 					reject(error)
 				}
 			})
