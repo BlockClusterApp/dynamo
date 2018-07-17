@@ -818,27 +818,53 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                         if(blockStatus == true) {
                             try {
                                 totalSmartContracts = await updateTotalSmartContracts(web3, blockToScan, totalSmartContracts)
+                                if(node.assetsContractAddress) {
+                                    await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                    await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                    await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                    var authoritiesList = await fetchAuthoritiesList(web3)
+                                }
 
+                                if(node.atomicSwapContractAddress) {
+                                    await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
+                                    await clearAtomicSwaps(web3, blockToScan, node)
+                                }
 
+                                if(node.streamsContractAddress) {
+                                    await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
+                                    await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress)
+                                }
+
+                                if(blockToScan % 5 == 0) {
+                                    if(node.staticPeers) {
+                                        await addPeers(web3, node.staticPeers)
+                                    }
+
+                                    var peers = await getPeers(web3, node.accounts);
+                                }
 
                                 var set  = {};
                                 set.blockToScan = blockToScan + 1;
                                 set.totalSmartContracts = totalSmartContracts;
                                 set.diskSize = await getSize();
 
+                                if(authoritiesList) {
+                                    set.currentValidators = authoritiesList;
+                                }
 
+                                if(peers) {
+                                    set.connectedPeers = peers;
+                                }
 
                                 try {
                                     await updateDB(instanceId, set);
                                 } catch(e) {
-                                    console.log("Error C \n")
                                     console.log(e)
                                     setTimeout(scan, 100)
                                     return;
                                 }
 
                             } catch(e) {
-                                console.log("Error B \n")
                                 console.log(e)
                             }
 
@@ -848,7 +874,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                             return;
                         }
                     } catch(e) {
-                        console.log("Error A \n")
                         console.log(e)
                     }
 
