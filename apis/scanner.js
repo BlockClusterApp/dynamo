@@ -175,6 +175,8 @@ async function blockExists(web3, blockNumber) {
     return new Promise((resolve, reject) => {
         web3.eth.getBlock(blockNumber, async (error, result) => {
             if(error) {
+                console.log("Error Inside Block Exists")
+                console.log(error);
                 reject(error)
             } else if (result == null) {
                 resolve(false)
