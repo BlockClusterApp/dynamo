@@ -3,7 +3,7 @@ then
   	pkill screen
 	screen -d -m ./constellation.sh
 	sleep 5
-	screen -d -m ./quorum-node.sh
+	screen -d -m ./quorum-node.sh > quroum-node.log
 	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
@@ -51,7 +51,7 @@ then
   	pkill screen
 	screen -d -m ./constellation.sh $1
 	sleep 5
-	screen -d -m ./quorum-node.sh $2 $3
+	screen -d -m ./quorum-node.sh $2 $3 > quroum-node.log
 	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
@@ -99,7 +99,7 @@ then
   	pkill screen
 	screen -d -m ./constellation.sh $1
 	sleep 5
-	screen -d -m ./quorum-node.sh $2 $3 $4
+	screen -d -m ./quorum-node.sh $2 $3 $4 > quroum-node.log
 	screen -d -m node apis/app.js > app.log
 	sleep 10;
     screen -d -m node apis/init.js > init.log
