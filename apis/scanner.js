@@ -231,7 +231,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
 			if(error) {
-				reject(error);
+				reject("An error while indexSoloAssets. " + web3.isConnected());
 			} else {
 				try {
 					for(let count = 0; count < events.length; count++) {
