@@ -867,27 +867,24 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                 try {
                                     await updateDB(instanceId, set);
+                                    setTimeout(scan, 100)
                                 } catch(e) {
                                     console.log(e)
                                     setTimeout(scan, 100)
-                                    return;
                                 }
 
                             } catch(e) {
                                 console.log(e)
+                                setTimeout(scan, 1000)
                             }
-
-                            setTimeout(scan, 1000)
                         } else {
                             console.log("Block Exists: " + blockStatus + ", " + blockToScan + ", Timestamp: " + Date.now())
                             setTimeout(scan, 1000)
-                            return;
                         }
                     } catch(e) {
                         console.log(e)
+                        setTimeout(scan, 100)
                     }
-
-                    setTimeout(scan, 100)
                 } else {
                     console.log(err)
                     setTimeout(scan, 100)
