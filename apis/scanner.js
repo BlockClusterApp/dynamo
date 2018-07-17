@@ -205,7 +205,6 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 	return new Promise((resolve, reject) => {
 		web3.eth.getBlock(blockNumber, async (error, result) => {
 			if (!error && result !== null) {
-                console.log(result.transactions)
 				for(let count = 0; count < result.transactions.length; count++) {
 					try {
 						let isSmartContractDeploy = await fetchTxn(web3, result.transactions[count])
@@ -464,8 +463,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
 			if(error) {
-                console.log("Error inside indexAssets at :" + Date.now())
-                console.log(error)
 				reject(error);
 			} else {
 				try {
@@ -809,8 +806,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
                     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
 
-                    console.log("Starting to Scan Block # " + blockToScan)
-
                     try {
 
                         if(accountsUnlocked === false) {
@@ -820,15 +815,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                         var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
 
-                        console.log("Block Status of # " + blockToScan + " is " + blockStatus)
-
                         if(blockStatus == true) {
                             try {
                                 totalSmartContracts = await updateTotalSmartContracts(web3, blockToScan, totalSmartContracts)
-                                console.log(`Total smart contract scanned for ${blockToScan}`)
                                 if(node.assetsContractAddress) {
                                     await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
-                                    console.log(`Total index assets scanned for ${blockToScan}`)
                                     await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
                                     await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress)
                                     var authoritiesList = await fetchAuthoritiesList(web3)
