@@ -462,6 +462,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 		var assets = assetsContract.at(assetsContractAddress);
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
+            console.log(events)
 			if(error) {
 				reject(error);
 			} else {
