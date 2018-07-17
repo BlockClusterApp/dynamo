@@ -870,7 +870,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                             setTimeout(scan, 1000)
                         } else {
-                            console.log("Block Exists: " + blockStatus)
+                            console.log("Block Exists: " + blockStatus + ", " + blockToScan + Date.now())
                             setTimeout(scan, 1000)
                             return;
                         }
