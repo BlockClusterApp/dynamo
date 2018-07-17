@@ -231,7 +231,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
 			if(error) {
-				reject("An error while indexSoloAssets. " + web3.isConnected());
+				reject(error);
 			} else {
 				try {
 					for(let count = 0; count < events.length; count++) {
@@ -870,6 +870,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                             setTimeout(scan, 1000)
                         } else {
+                            console.log("Block Exists: " + blockStatus)
                             setTimeout(scan, 1000)
                             return;
                         }
@@ -879,6 +880,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                     setTimeout(scan, 100)
                 } else {
+                    console.log(err)
                     setTimeout(scan, 100)
                 }
             });
