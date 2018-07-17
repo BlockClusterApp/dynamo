@@ -123,8 +123,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                         "constellationPubKey": constellationPublicKey,
                                                                         "nodeId": nodeId,
                                                                         "currentValidators": currentValidators,
-                                                                        "status": "running",
-                                                                        lastPinged: Date.now()
+                                                                        "status": "running"
                                                                     })
                                                                 }
                                                             })
@@ -188,8 +187,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                             "constellationPubKey": constellationPublicKey,
                                                                                                             "nodeId": nodeId,
                                                                                                             "currentValidators": currentValidators,
-                                                                                                            "status": "running",
-                                                                                                            lastPinged: Date.now()
+                                                                                                            "status": "running"
                                                                                                         })
                                                                                                     }
                                                                                                 })
