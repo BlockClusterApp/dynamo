@@ -175,8 +175,6 @@ async function blockExists(web3, blockNumber) {
     return new Promise((resolve, reject) => {
         web3.eth.getBlock(blockNumber, async (error, result) => {
             if(error) {
-                console.log("Error Inside Block Exists")
-                console.log(error);
                 reject(error)
             } else if (result == null) {
                 resolve(false)
@@ -465,6 +463,8 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
 			if(error) {
+                console.log("Error inside indexAssets at :" + Date.now())
+                console.log(error)
 				reject(error);
 			} else {
 				try {
@@ -872,7 +872,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                             setTimeout(scan, 1000)
                         } else {
-                            console.log("Block Exists: " + blockStatus + ", " + blockToScan + Date.now())
+                            console.log("Block Exists: " + blockStatus + ", " + blockToScan + ", Timestamp: " + Date.now())
                             setTimeout(scan, 1000)
                             return;
                         }
