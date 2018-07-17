@@ -205,6 +205,7 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 	return new Promise((resolve, reject) => {
 		web3.eth.getBlock(blockNumber, async (error, result) => {
 			if (!error && result !== null) {
+                console.log(result.transactions)
 				for(let count = 0; count < result.transactions.length; count++) {
 					try {
 						let isSmartContractDeploy = await fetchTxn(web3, result.transactions[count])
@@ -218,6 +219,8 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 				}
 				resolve(totalSmartContracts)
 			} else {
+                console.log("Error inside updateTotalSmartContracts at : " + Date.now())
+                console.log(error)
 				reject(error)
 			}
 		})
