@@ -651,7 +651,7 @@ async function clearAtomicSwaps(web3, blockNumber, network) {
                                         let other_network = await searchNetwork({instanceId: acceptedOrder.instanceId});
 
                                         if(other_network) {
-                                            let web3_other = new Web3(new Web3.providers.HttpProvider("http://" + other_network.clusterIP + ":8545"));
+                                            let web3_other = new Web3(new Web3.providers.HttpProvider(`http://${other_network.workerNodeIP}:${other_network.rpcNodePort}`));
                                             await claimTxn(web3_other, other_network.atomicSwapContractAddress, events[count].args.hash, atomicSwapSecret);
                                         }
                                     }
