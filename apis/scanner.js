@@ -465,7 +465,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 			if(error) {
 				reject(error);
 			} else {
-                console.log(blockNumber, events)
 				try {
 					for(let count = 0; count < events.length; count++) {
 						if (events[count].event === "bulkAssetTypeCreated") {
@@ -801,7 +800,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         let instanceId = process.env.instanceId;
         let scan = async function() {
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
-                if (!err) {
+                if (!err && node.status === "running") {
 
                     let blockToScan = (node.blockToScan ? node.blockToScan : 0);
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
@@ -817,7 +816,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                         var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
 
                         if(blockStatus == true) {
-                            console.log("Block Exists: " + blockToScan + ", Timestamp: " + Date.now())
                             try {
                                 totalSmartContracts = await updateTotalSmartContracts(web3, blockToScan, totalSmartContracts)
                                 if(node.assetsContractAddress) {
@@ -871,7 +869,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 setTimeout(scan, 1000)
                             }
                         } else {
-                            console.log("Block Does not Exists: " + blockToScan + ", Timestamp: " + Date.now())
                             setTimeout(scan, 1000)
                         }
                     } catch(e) {
