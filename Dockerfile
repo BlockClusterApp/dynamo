@@ -10,6 +10,15 @@ RUN apt-get install -y netcat
 RUN apt-get install -y git
 RUN apt-get install -y curl
 RUN apt-get install -y jq
+
+RUN apt-get install -y python3-pip
+RUN sudo pip3 install pipenv
+RUN git clone https://github.com/nucypher/pyUmbral.git
+ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
+WORKDIR /pyUmbral
+RUN pipenv install --system --deploy --ignore-pipfile
+RUN python3 setup.py install
+
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs
 RUN mkdir ./smart-contracts

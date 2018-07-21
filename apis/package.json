@@ -13,6 +13,12 @@
       "body-parser": "1.18.3",
       "request": "2.81.0",
       "sha256": "0.2.0",
-      "eth-lightwallet": "3.0.1"
+      "eth-lightwallet": "3.0.1",
+      "child_process": "^1.0.2",
+      "elliptic": "^6.4.0",
+      "eth-crypto": "^1.2.0",
+      "ethereumjs-wallet": "^0.6.0",
+      "js-sha3": "^0.7.0",
+      "secp256k1": "^3.5.0"
   }
 }
