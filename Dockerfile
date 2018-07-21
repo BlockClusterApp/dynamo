@@ -10,6 +10,7 @@ RUN apt-get install -y netcat
 RUN apt-get install -y git
 RUN apt-get install -y curl
 RUN apt-get install -y jq
+RUN apt-get install -y sudo
 
 RUN apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
