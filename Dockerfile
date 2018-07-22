@@ -10,13 +10,14 @@ RUN apt-get install -y netcat
 RUN apt-get install -y git
 RUN apt-get install -y curl
 RUN apt-get install -y jq
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
-RUN mkdir ./smart-contracts
-ADD smart-contracts ./smart-contracts
-RUN mkdir ./apis
-ADD apis ./apis
-RUN cd apis && npm install
+RUN apt-get install -y sudo
+
+RUN apt-get install -y python3-pip
+RUN sudo pip3 install pipenv
+RUN git clone https://github.com/nucypher/pyUmbral.git
+ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
+RUN cd pyUmbral && pipenv install --system --deploy --ignore-pipfile && python3 setup.py install
+
 COPY constellation.sh .
 COPY quorum-node.sh .
 COPY setup.sh .
@@ -29,3 +30,13 @@ RUN chmod 755 setup.sh
 RUN chmod 755 istanbul
 RUN chmod 755 geth
 RUN chmod 755 constellation-node
+
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+RUN mkdir ./smart-contracts
+ADD smart-contracts ./smart-contracts
+RUN mkdir ./apis
+ADD apis/package.json ./apis/package.json
+RUN cd apis && npm install
+ADD apis ./apis
+RUN cd apis && npm install

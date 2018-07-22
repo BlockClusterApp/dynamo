@@ -1,5 +1,11 @@
 let smartContracts = require("../smart-contracts/index.js");
-
+var Wallet = require("ethereumjs-wallet");
+let EthCrypto = require("eth-crypto");
+let elliptic = require('elliptic');
+let sha3 = require('js-sha3');
+let ec = new elliptic.ec('secp256k1')
+let exec = require("child_process").exec;
+var base64 = require('base-64');
 var Web3 = require("web3");
 var MongoClient = require("mongodb").MongoClient;
 var fs = require('fs');
@@ -103,6 +109,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                     } else {
                                                         let currentValidators = result.result;
 
+                                                        let wallet = Wallet.generate();
+                                                        let private_key_hex = wallet.getPrivateKey().toString("hex");
+                                                        let private_key_base64 = wallet.getPrivateKey().toString("base64");
+                                                        let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
+                                                        let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
 
                                                         if(process.env.assetsContractAddress && process.env.atomicSwapContractAddress && process.env.streamsContractAddress) {
                                                             web3.eth.getBlock(0, async (error, block) => {
@@ -123,7 +134,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                         "constellationPubKey": constellationPublicKey,
                                                                         "nodeId": nodeId,
                                                                         "currentValidators": currentValidators,
-                                                                        "status": "running"
+                                                                        "status": "running",
+                                                                        "impulse": {
+                                                                            privateKey: private_key_hex,
+                                                                            publicKey: compressed_public_key_hex
+                                                                        }
                                                                     })
                                                                 }
                                                             })
@@ -187,7 +202,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                             "constellationPubKey": constellationPublicKey,
                                                                                                             "nodeId": nodeId,
                                                                                                             "currentValidators": currentValidators,
-                                                                                                            "status": "running"
+                                                                                                            "status": "running",
+                                                                                                            "impulse": {
+                                                                                                                privateKey: private_key_hex,
+                                                                                                                publicKey: compressed_public_key_hex
+                                                                                                            }
                                                                                                         })
                                                                                                     }
                                                                                                 })

@@ -12,6 +12,16 @@ var jwt = require('jsonwebtoken');
 var Web3 = require("web3");
 var bodyParser = require('body-parser')
 const Config = require('./config');
+var Wallet = require("ethereumjs-wallet");
+let EthCrypto = require("eth-crypto");
+let elliptic = require('elliptic');
+let sha3 = require('js-sha3');
+let ec = new elliptic.ec('secp256k1')
+let exec = require("child_process").exec;
+var base64 = require('base-64');
+var request = require("request")
+var btoa = require('btoa');
+var atob = require('atob');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -35,6 +45,23 @@ function addZeros(s, n) {
     }
 
     return s;
+}
+
+// Hex to Base64
+function hexToBase64(str) {
+    return btoa(String.fromCharCode.apply(null,
+      str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" "))
+    );
+}
+
+// Base64 to Hex
+function base64ToHex(str) {
+    for (var i = 0, bin = atob(str.replace(/[ \r\n]+$/, "")), hex = []; i < bin.length; ++i) {
+        let tmp = bin.charCodeAt(i).toString(16);
+        if (tmp.length === 1) tmp = "0" + tmp;
+        hex[hex.length] = tmp;
+    }
+    return hex.join("");
 }
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
@@ -65,23 +92,46 @@ app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
-    assets.issueSoloAsset.sendTransaction(req.body.assetName, req.body.toAccount, req.body.identifier, {
-        from: req.body.fromAccount,
-        gas: '4712388'
-    }, function(error, txnHash){
-        if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
-        } else {
-            for(let key in req.body.data) {
-                assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, req.body.data[key], {
-                    from: req.body.fromAccount,
-                    gas: '4712388'
-                })
-            }
 
-            res.send(JSON.stringify({"txnHash": txnHash}))
+    /*
+        1. Create Encryption Keys
+        2. Store the key pair in DB
+        2. Store Public Key on Blockchain
+    */
+
+    let wallet = Wallet.generate();
+    let private_key_hex = wallet.getPrivateKey().toString("hex");
+    let private_key_base64 = wallet.getPrivateKey().toString("base64");
+    let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
+    let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
+
+    db.collection("encryptionKeys").insertOne({
+        private_key_hex: private_key_hex,
+        compressed_public_key_hex: compressed_public_key_hex,
+        instanceId: instanceId
+    }, function(err) {
+        if(!err) {
+            assets.issueSoloAsset.sendTransaction(req.body.assetName, req.body.toAccount, req.body.identifier, compressed_public_key_hex, {
+                from: req.body.fromAccount,
+                gas: '4712388'
+            }, function(error, txnHash){
+                if(error) {
+                    res.send(JSON.stringify({"error": error.toString()}))
+                } else {
+                    for(let key in req.body.data) {
+                        assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, req.body.data[key], {
+                            from: req.body.fromAccount,
+                            gas: '4712388'
+                        })
+                    }
+
+                    res.send(JSON.stringify({"txnHash": txnHash}))
+                }
+            })
+        } else {
+            res.send(JSON.stringify({"error": err.toString()}))
         }
-    })
+    });
 })
 
 
@@ -192,14 +242,211 @@ app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
 
-    assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, req.body.key, req.body.value, {
-        from: req.body.fromAccount,
-        gas: '4712388'
-    }, function(error, txnHash){
-        if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+    /*
+        1. If private
+        2. Write to Impulse
+        3. Then write hash to BlockChain
+    */
+
+    if(req.body.visibility === "private") {
+        let timestamp = Date.now();
+        let object = base64.encode(JSON.stringify({
+            key: req.body.key,
+            value: req.body.value,
+            timestamp: timestamp
+        }))
+
+        let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+            from: web3.eth.accounts[0]
+        });
+
+        db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+            if(!err && keyPair) {
+                let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+
+                exec(`python3 /apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
+                    if(!error) {
+                        stdout = stdout.split(" ")
+                        let ciphertext = stdout[0].substr(2).slice(0, -1)
+                        let capsule = stdout[1].substr(2).slice(0, -2)
+
+                        let ciphertext_hash = sha3.keccak256(ciphertext);
+                        let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {canonical: true});
+
+                        request({
+                            url: `${Config.getImpulseURL()}/writeObject`,
+                            method: "POST",
+                            json: {
+                                publicKey: publicKey,
+                                encryptedData: ciphertext,
+                                signature: signature,
+                                metadata: {
+                                    assetName: req.body.assetName,
+                                    assetType: "solo",
+                                    identifier: req.body.identifier
+                                },
+                                capsule: capsule
+                            }
+                        }, (error, result, body) => {
+                            if(!error) {
+                                if(body.error) {
+                                    res.send(JSON.stringify({"error": body.error.toString()}))
+                                } else {
+                                    assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
+                                        from: req.body.fromAccount,
+                                        gas: '4712388'
+                                    }, function(error, txnHash){
+                                        if(error) {
+                                            res.send(JSON.stringify({"error": error.toString()}))
+                                        } else {
+                                            res.send(JSON.stringify({"txnHash": txnHash}))
+                                        }
+                                    })
+                                }
+                            } else {
+                                res.send(JSON.stringify({"error": error.toString()}))
+                            }
+                        })
+
+                    } else {
+                        res.send(JSON.stringify({"error": error.toString()}))
+                    }
+                })
+            } else {
+                res.send(JSON.stringify({"error": "You are not the owner of the private key required for signing meta data"}))
+            }
+        })
+    } else {
+        assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, req.body.key, req.body.value, {
+            from: req.body.fromAccount,
+            gas: '4712388'
+        }, function(error, txnHash){
+            if(error) {
+                res.send(JSON.stringify({"error": error.toString()}))
+            } else {
+                res.send(JSON.stringify({"txnHash": txnHash}))
+            }
+        })
+    }
+})
+
+app.post(`/api/node/${instanceId}/assets/grantAccessToPrivateData`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+
+    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+    var assets = assetsContract.at(network.assetsContractAddress);
+
+    /*
+        1. Generate Re-Encryption Key
+        2. Write to Impulse
+        3. Send BC Blockchain Txn to Notify other participant
+    */
+
+    let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+        from: web3.eth.accounts[0]
+    });
+
+    db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+        if(!err && keyPair) {
+            let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+
+            exec('python3 /apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(keyPair.private_key_hex) + " " + req.body.publicKey, (error, stdout, stderr) => {
+                if(!error) {
+                    let kfrags = stdout
+                    let signature = ec.sign(sha3.keccak256(keyPair.compressed_public_key_hex), keyPair.private_key_hex, "hex", {canonical: true});
+
+                    request({
+                        url: `${Config.getImpulseURL()}/writeKey`,
+                        method: "POST",
+                        json: {
+                            ownerPublicKey: keyPair.compressed_public_key_hex,
+                            reEncryptionKey: kfrags,
+                            signature: signature,
+                            receiverPublicKey: base64ToHex(req.body.publicKey)
+                        }
+                    }, (error, result, body) => {
+                        if(!error) {
+                            if(body.error) {
+                                res.send(JSON.stringify({"error": body.error.toString()}))
+                            } else {
+                                assets.soloAssetGrantAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
+                                    from: req.body.fromAccount,
+                                    gas: '4712388'
+                                }, function(error, txnHash){
+                                    if(error) {
+                                        res.send(JSON.stringify({"error": error.toString()}))
+                                    } else {
+                                        res.send(JSON.stringify({"txnHash": txnHash}))
+                                    }
+                                })
+                            }
+                        } else {
+                            res.send(JSON.stringify({"error": error.toString()}))
+                        }
+                    })
+                } else {
+                    res.send(JSON.stringify({"error": error.toString()}))
+                }
+            })
+
+
         } else {
-            res.send(JSON.stringify({"txnHash": txnHash}))
+            res.send(JSON.stringify({"error": err.toString()}))
+        }
+    })
+})
+
+app.post(`/api/node/${instanceId}/assets/revokeAccessToPrivateData`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+
+    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+    var assets = assetsContract.at(network.assetsContractAddress);
+
+    /*
+        1. Generate Re-Encryption Key
+        2. Write to Impulse
+        3. Send BC Blockchain Txn to Notify other participant
+    */
+
+    let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+        from: web3.eth.accounts[0]
+    });
+
+    db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+        if(!err && keyPair) {
+            let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+            let signature = ec.sign(sha3.keccak256(keyPair.compressed_public_key_hex), keyPair.private_key_hex, "hex", {canonical: true});
+
+            request({
+                url: `${Config.getImpulseURL()}/deleteKey`,
+                method: "POST",
+                json: {
+                    ownerPublicKey: keyPair.compressed_public_key_hex,
+                    signature: signature,
+                    receiverPublicKey: base64ToHex(req.body.publicKey)
+                }
+            }, (error, result, body) => {
+                if(!error) {
+                    if(body.error) {
+                        res.send(JSON.stringify({"error": body.error.toString()}))
+                    } else {
+                        assets.soloAssetRevokeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
+                            from: req.body.fromAccount,
+                            gas: '4712388'
+                        }, function(error, txnHash){
+                            if(error) {
+                                res.send(JSON.stringify({"error": error.toString()}))
+                            } else {
+                                res.send(JSON.stringify({"txnHash": txnHash}))
+                            }
+                        })
+                    }
+                } else {
+                    res.send(JSON.stringify({"error": error.toString()}))
+                }
+            })
+        } else {
+            res.send(JSON.stringify({"error": err.toString()}))
         }
     })
 })
