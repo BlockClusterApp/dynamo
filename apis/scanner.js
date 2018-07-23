@@ -66,7 +66,11 @@ async function queryImpulse(query, privateKeyHex, publicKeyHex, ownerPublicKeyHe
                 if(error) {
                     reject(error)
                 } else {
-                    resolve(body)
+                    if(body.error) {
+                        reject(body.error)
+                    } else {
+                        resolve(body)
+                    }
                 }
             })
         } catch(e) {
@@ -75,21 +79,70 @@ async function queryImpulse(query, privateKeyHex, publicKeyHex, ownerPublicKeyHe
     })
 }
 
-async function decryptData(privateKeyHex, publicKeyHex, capsule, ciphertext) {
+async function decryptData(privateKeyHex, publicKeyHex, ownerPublicKeyHex, capsule, ciphertext, decrypt_direct, derivationKey) {
     return new Promise((resolve, reject) => {
         try {
-            exec('python3 /apis/crypto-operations/decrypt.py ' + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + capsule + " " + ciphertext, (error, stdout, stderr) => {
-                if(!error) {
-                    let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
-                    resolve(plainObj)
-                } else {
-                    reject(error)
-                    return;
-                }
-            })
+            if(decrypt_direct) {
+                exec('python3 /apis/crypto-operations/decrypt.py ' + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + capsule + " " + ciphertext, (error, stdout, stderr) => {
+                    if(!error) {
+                        try {
+                            let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
+                            resolve(plainObj)
+                        } catch(e) {
+                            //decrypted data is of invalid format.
+                            resolve()
+                        }
+                    } else {
+                        reject(error)
+                    }
+                })
+            } else if(!decrypt_direct) {
+                exec("python3 /apis/crypto-operations/decrypt-pre.py '" + derivationKey + "' " + capsule + " " + ciphertext + " " + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + hexToBase64(ownerPublicKeyHex), (error, stdout, stderr) => {
+                    if(!error) {
+                        try {
+                            let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
+                            resolve(plainObj)
+                        } catch(e) {
+                            //decrypted data is of invalid format.
+                            resolve({key: "error", value: ""})
+                        }
+                    } else {
+                        reject(error)
+                    }
+                })
+            }
         } catch(e) {
             reject(e)
         }
+    })
+}
+
+async function getEncryptedDataEventsOfAsset(web3, assets, assetName, uniqueIdentifier) {
+    return new Promise((resolve, reject) => {
+        var events = assets.addedOrUpdatedEncryptedDataObjectHash({
+            assetNameHash: '0x' + sha256(assetName),
+            uniqueAssetIdentifierHash: '0x' + sha256(uniqueIdentifier)
+        }, {fromBlock: 0, toBlock: 'latest'})
+
+        events.get((error, result) => {
+            if(error) {
+                reject(error)
+            } else {
+                resolve(result)
+            }
+        })
+    })
+}
+
+async function getTimestampOfBlock(web3, blockNumber) {
+    return new Promise((resolve, reject) => {
+        web3.eth.getBlock(blockNumber,  function(error, blockDetails) {
+            if(!error) {
+                resolve(blockDetails.timestamp)
+            } else {
+                reject(error)
+            }
+        })
     })
 }
 
@@ -307,7 +360,7 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 	});
 }
 
-async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddress) {
+async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddress, impulse) {
 	return new Promise((resolve, reject) => {
 		var assetsContract = web3.eth.contract( assetsContractABI);
 		var assets = assetsContract.at(assetsContractAddress);
@@ -398,18 +451,18 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                     "encryptedDataHash": encryptedDataHash
                                 }, privateKey, publicKey, ownerPublicKey);
 
-                                if(!dataObj.error) {
-                                    for(let iii = 0; iii < dataObj.length; iii++) {
-                                        let cipherText = dataObj[iii].encryptedData;
-                                        let capsule = dataObj[iii].capsule;
-                                        let plainObj = await decryptData(privateKey, publicKey, capsule, cipherText)
+                                for(let iii = 0; iii <  dataObj.queryResult.length; iii++) {
+                                    let cipherText =  dataObj.queryResult[iii].encryptedData;
+                                    let capsule =  dataObj.queryResult[iii].capsule;
+                                    let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
+                                    if(plainObj) {
                                         try {
-            								var uniqueAssetIdentifierValue = new BigNumber(uniqueAssetIdentifier)
-            								uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-            							} catch(e) {
-            								uniqueAssetIdentifierValue = uniqueAssetIdentifier
-            							}
+                                            var uniqueAssetIdentifierValue = new BigNumber(uniqueAssetIdentifier)
+                                            uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
+                                        } catch(e) {
+                                            uniqueAssetIdentifierValue = uniqueAssetIdentifier
+                                        }
 
                                         await upsertSoloAsset({
                                             instanceId: instanceId,
@@ -423,8 +476,10 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                             }
 
                             try {
-                                let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
+                                let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKeyOwner})
+
+                                //check if you are issuer of data
                                 if(keyPair) {
                                     fetchAndWriteEncryptedData(
                                         events[count].args.assetName,
@@ -437,8 +492,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
                                 } else {
                                     //see if you have access
-                                    let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, impulse.publicKey)
-                                    let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                    let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, hexToBase64(impulse.publicKey))
 
                                     if(hasAccess) {
                                         let privateKey = impulse.privateKey;
@@ -458,45 +512,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                 reject(e)
                                 return;
                             }
-
-                            /*
-							try {
-								var uniqueAssetIdentifierValue = new BigNumber(events[count].args.uniqueAssetIdentifier)
-								uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-							} catch(e) {
-								uniqueAssetIdentifierValue = events[count].args.uniqueAssetIdentifier
-							}
-
-							try {
-								let number = new BigNumber(events[count].args.value)
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: uniqueAssetIdentifierValue
-                                	}, {
-										[events[count].args.key]: number.toNumber()
-									})
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							}
-							catch(e){
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: uniqueAssetIdentifierValue
-                                	}, {
-										[events[count].args.key]: events[count].args.value
-									})
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							}
-                            */
 						} else if (events[count].event === "transferredOwnershipOfSoloAsset") {
 							try {
 								var uniqueAssetIdentifierValue = new BigNumber(events[count].args.uniqueAssetIdentifier)
@@ -638,14 +653,15 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                     }
         						} else if(events[count].event === "soloAssetAccessGranted") {
                                     try {
-                                        let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = searchEncryptionKey({compressed_public_key_hex: publicKey})
+                                        let ownerPublicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: ownerPublicKey})
 
                                         if(keyPair) {
+                                            //u r the owner
                                             await upsertSoloAssetAuditTrail({
                                                 instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
-                								uniqueIdentifier: events[count].args.uniqueIdentifier,
+                								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash
                                             }, {
                                                 eventName: "soloAssetAccessGranted",
@@ -653,6 +669,54 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                 transactionHash: events[count].transactionHash,
                                                 publicKey: events[count].args.publicKey
             								})
+                                        } else if (hexToBase64(impulse.publicKey) === events[count].args.publicKey) {
+                                            let pastEvents = await getEncryptedDataEventsOfAsset(web3, assets, events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+
+                                            for(var iii = 0; iii < pastEvents.length; iii++) {
+                                                let dataObj = await queryImpulse({
+                                                    "metadata.assetName": pastEvents[iii].args.assetName,
+                                                    "metadata.assetType": "solo",
+                                                    "metadata.identifier": pastEvents[iii].args.uniqueAssetIdentifier,
+                                                    "encryptedDataHash": pastEvents[iii].args.hash
+                                                }, impulse.privateKey, impulse.publicKey, ownerPublicKey);
+
+                                                for(let jjj = 0; jjj <  dataObj.queryResult.length; jjj++) {
+                                                    let cipherText =  dataObj.queryResult[jjj].encryptedData;
+                                                    let capsule =  dataObj.queryResult[jjj].capsule;
+                                                    let plainObj = await decryptData(impulse.privateKey, impulse.publicKey, ownerPublicKey, capsule, cipherText, impulse.publicKey === ownerPublicKey, dataObj.derivationKey)
+
+                                                    if(plainObj) {
+                                                        try {
+                                                            var uniqueAssetIdentifierValue = new BigNumber(pastEvents[iii].args.uniqueAssetIdentifier)
+                                                            uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
+                                                        } catch(e) {
+                                                            uniqueAssetIdentifierValue = uniqueAssetIdentifier
+                                                        }
+
+
+                                                        await upsertSoloAsset({
+                                                            instanceId: instanceId,
+                                                            assetName: pastEvents[iii].args.assetName,
+                                                            uniqueIdentifier: uniqueAssetIdentifierValue
+                                                        }, {
+                                                            [plainObj.key]: plainObj.value
+                                                        })
+
+                                                        await upsertSoloAssetAuditTrail({
+                                                            instanceId: instanceId,
+                                                            assetName: pastEvents[iii].args.assetName,
+                                                            uniqueIdentifier: uniqueAssetIdentifierValue,
+                                                            eventHash: sha256(JSON.stringify(pastEvents[iii]))
+                                                        }, {
+                                                            eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                                                            timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
+                                                            transactionHash: pastEvents[iii].transactionHash,
+                                                            key: plainObj.key,
+                                                            value: plainObj.value
+                                                        })
+                                                    }
+                                                }
+                                            }
                                         }
                                     } catch(e) {
                                         reject(e)
@@ -661,13 +725,13 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                 } else if(events[count].event === "soloAssetAccessRevoked") {
                                     try {
                                         let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = searchEncryptionKey({compressed_public_key_hex: publicKey})
+                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKey})
 
                                         if(keyPair) {
                                             await upsertSoloAssetAuditTrail({
                                                 instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
-                								uniqueIdentifier: events[count].args.uniqueIdentifier,
+                								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash
                                             }, {
                                                 eventName: "soloAssetAccessRevoked",
@@ -691,12 +755,12 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             "encryptedDataHash": encryptedDataHash
                                         }, privateKey, publicKey, ownerPublicKey);
 
-                                        if(!dataObj.error) {
-                                            for(let iii = 0; iii < dataObj.length; iii++) {
-                                                let cipherText = dataObj[iii].encryptedData;
-                                                let capsule = dataObj[iii].capsule;
-                                                let plainObj = await decryptData(privateKey, publicKey, capsule, cipherText)
+                                        for(let iii = 0; iii < dataObj.queryResult.length; iii++) {
+                                            let cipherText = dataObj.queryResult[iii].encryptedData;
+                                            let capsule = dataObj.queryResult[iii].capsule;
+                                            let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
+                                            if(plainObj) {
                                                 await upsertSoloAssetAuditTrail({
                                                     instanceId: instanceId,
                                                     assetName: assetName,
@@ -715,7 +779,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                     try {
                                         let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
+                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKey})
                                         if(keyPair) {
                                             fetchAndWriteEncryptedData(
                                                 events[count].args.assetName,
@@ -731,7 +795,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                         } else {
                                             //see if you have access
-                                            let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, impulse.publicKey)
+                                            let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, hexToBase64(impulse.publicKey))
                                             let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
 
                                             if(hasAccess) {
@@ -1134,7 +1198,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 totalSmartContracts = await updateTotalSmartContracts(web3, blockToScan, totalSmartContracts)
                                 if(node.assetsContractAddress) {
                                     await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
-                                    await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                    await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
                                     await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
                                     var authoritiesList = await fetchAuthoritiesList(web3)
                                 }
