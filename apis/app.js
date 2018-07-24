@@ -718,15 +718,136 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
     var streamsContract = web3.eth.contract(smartContracts.streams.abi);
     var streams = streamsContract.at(network.streamsContractAddress);
 
-    streams.publish.sendTransaction(req.body.streamName, req.body.key, req.body.data, {
-        from: req.body.fromAccount
-    }, function(error, txnHash) {
-        if (!error) {
-            res.send(JSON.stringify({"txnHash": txnHash}))
-        } else {
-            res.send(JSON.stringify({"error": error.toString()}))
+    if(req.body.visibility === "private" && req.body.publicKeys.length > 0) {
+
+        let wallet = Wallet.generate();
+        let private_key_hex = wallet.getPrivateKey().toString("hex");
+        let private_key_base64 = wallet.getPrivateKey().toString("base64");
+        let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
+        let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
+
+        async function storeData(compressed_public_key_base64, object, streamName, key) {
+            return new Promise((resolve, reject) => {
+                exec(`python3 /apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
+                    if(!error) {
+                        console.log(stdout)
+                        stdout = stdout.split(" ")
+                        let ciphertext = stdout[0].substr(2).slice(0, -1)
+                        let capsule = stdout[1].substr(2).slice(0, -2)
+
+                        let ciphertext_hash = sha3.keccak256(ciphertext);
+                        let signature = ec.sign(ciphertext_hash, private_key_hex, "hex", {canonical: true});
+
+                        request({
+                            url: `${Config.getImpulseURL()}/writeObject`,
+                            method: "POST",
+                            json: {
+                                publicKey: compressed_public_key_hex,
+                                encryptedData: ciphertext,
+                                signature: signature,
+                                metadata: {
+                                    streamName: streamName,
+                                    key: key
+                                },
+                                capsule: capsule
+                            }
+                        }, (error, result, body) => {
+                            if(!error) {
+                                if(body.error) {
+                                    reject(body.error)
+                                } else {
+                                    resolve(ciphertext_hash)
+                                }
+                            } else {
+                                reject(error)
+                            }
+                        })
+                    } else {
+                        reject(error)
+                    }
+                })
+            })
         }
-    })
+
+        async function generateAndStoreKey(private_key_hex, publicKey) {
+            return new Promise((resolve, reject) => {
+                exec('python3 /apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(private_key_hex) + " " + publicKey, (error, stdout, stderr) => {
+                    if(!error) {
+                        let kfrags = stdout
+                        let signature = ec.sign(sha3.keccak256(compressed_public_key_hex),  private_key_hex, "hex", {canonical: true});
+
+                        request({
+                            url: `${Config.getImpulseURL()}/writeKey`,
+                            method: "POST",
+                            json: {
+                                ownerPublicKey: compressed_public_key_hex,
+                                reEncryptionKey: kfrags,
+                                signature: signature,
+                                receiverPublicKey: base64ToHex(publicKey)
+                            }
+                        }, (error, result, body) => {
+                            if(!error) {
+                                if(body.error) {
+                                    reject({"myerror": body.error, compressed_public_key_hex: compressed_public_key_hex, reEncryptionKey: kfrags, signature: signature, receiverPublicKey: base64ToHex(publicKey)})
+                                } else {
+                                    resolve()
+                                }
+                            } else {
+                                reject(error)
+                            }
+                        })
+                    } else {
+                        reject(error)
+                    }
+                })
+            })
+        }
+
+        db.collection("encryptionKeys").insertOne({
+            private_key_hex: private_key_hex,
+            compressed_public_key_hex: compressed_public_key_hex,
+            instanceId: instanceId
+        }, async function(err) {
+            if(!err) {
+                try {
+                    let encryptedDataHash = await storeData(compressed_public_key_base64, base64.encode(JSON.stringify({
+                        key: req.body.key,
+                        value: req.body.data,
+                        timestamp: Date.now()
+                    })), req.body.streamName, req.body.key)
+
+                    for(let count = 0; count < req.body.publicKeys.length; count++) {
+                        //now generate re-encrypt key for all publicKeys
+                        await generateAndStoreKey(private_key_hex, req.body.publicKeys[count])
+                    }
+
+                    streams.publish.sendTransaction(req.body.streamName, req.body.key, encryptedDataHash, true, compressed_public_key_base64, req.body.publicKeys.join(), {
+                        from: req.body.fromAccount
+                    }, function(error, txnHash) {
+                        if (!error) {
+                            res.send(JSON.stringify({"txnHash": txnHash}))
+                        } else {
+                            res.send(JSON.stringify({"error": error.toString()}))
+                        }
+                    })
+                } catch(e) {
+                    res.send(JSON.stringify({"error": e}))
+                }
+            } else {
+                res.send(JSON.stringify({"error": "An unknown error occured"}))
+            }
+        })
+    } else {
+        streams.publish.sendTransaction(req.body.streamName, req.body.key, req.body.data, false, "", "", {
+            from: req.body.fromAccount
+        }, function(error, txnHash) {
+            if (!error) {
+                res.send(JSON.stringify({"txnHash": txnHash}))
+            } else {
+                res.send(JSON.stringify({"error": error.toString()}))
+            }
+        })
+    }
 })
 
 async function getDirSize(myFolder) {

@@ -947,7 +947,7 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
 	});
 }
 
-async function indexStreams(web3, blockNumber, instanceId, streamsContractAddress) {
+async function indexStreams(web3, blockNumber, instanceId, streamsContractAddress, impulse) {
 	return new Promise((resolve, reject) => {
 		var streamsContract = web3.eth.contract(streamsContractABI);
 		var streams = streamsContract.at(streamsContractAddress);
@@ -959,15 +959,66 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
 				try {
 					for(let count = 0; count < events.length; count++) {
 						if (events[count].event === "published") {
+                            async function fetchAndWriteEncryptedData(streamName, key, encryptedDataHash, privateKey, publicKey, ownerPublicKey, transactionHash) {
+                                let dataObj = await queryImpulse({
+                                    "metadata.streamName": streamName,
+                                    "metadata.key": key,
+                                    "encryptedDataHash": encryptedDataHash
+                                }, privateKey, publicKey, ownerPublicKey);
+
+
+                                let cipherText = dataObj.queryResult[0].encryptedData;
+                                let capsule = dataObj.queryResult[0].capsule;
+                                let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
+
+                                if(plainObj) {
+                                    await upsertStreamItem({
+                                        instanceId: instanceId,
+                                        streamName: events[count].args.streamName,
+                                        streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
+                                    }, {
+                                        key: plainObj.key,
+                                        data: plainObj.value
+                                    })
+                                }
+                            }
+
                             try {
-                                await upsertStreamItem({
-                                    instanceId: instanceId,
-                                    streamName: events[count].args.streamName,
-                                    streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
-                                }, {
-                                    key: events[count].args.key,
-                                    data: events[count].args.data
-                                })
+                                let publicKey = events[count].args.ownerPublicKey
+                                let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: base64ToHex(publicKey)})
+
+                                if(keyPair) {
+                                    console.log("You are the owner daya the data")
+                                    fetchAndWriteEncryptedData(
+                                        events[count].args.streamName,
+                                        events[count].args.key,
+                                        events[count].args.data,
+                                        keyPair.private_key_hex,
+                                        keyPair.compressed_public_key_hex,
+                                        keyPair.compressed_public_key_hex,
+                                        events[count].transactionHash
+                                    )
+
+                                } else {
+                                    //see if you have access
+                                    let hasAccess = events[count].args.receiverPublicKeys.split(",").includes(hexToBase64(impulse.publicKey))
+                                    let publicKeyOwner = events[count].args.ownerPublicKey
+
+                                    if(hasAccess) {
+                                        let privateKey = impulse.privateKey;
+                                        let publicKey = impulse.publicKey;
+
+                                        fetchAndWriteEncryptedData(
+                                            events[count].args.streamName,
+                                            events[count].args.key,
+                                            events[count].args.data,
+                                            privateKey,
+                                            publicKey,
+                                            base64ToHex(publicKeyOwner),
+                                            events[count].transactionHash
+                                        )
+                                    }
+                                }
                             } catch(e) {
                                 reject(e)
                                 return;
@@ -1210,7 +1261,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                 if(node.streamsContractAddress) {
                                     await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
-                                    await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress)
+                                    await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress, node.impulse)
                                 }
 
                                 if(blockToScan % 5 == 0) {
