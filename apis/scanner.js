@@ -14,28 +14,13 @@ var base64 = require('base-64');
 var btoa = require('btoa');
 var atob = require('atob');
 
-const server = require('http').createServer();
-
-const io = require('socket.io')(server, {
-  path: "/api/node/" + process.env.instanceId + "/events",
-  transports: ['polling']
-});
-
-server.listen(5742);
+const express = require('express')
+const app = express()
 
 var db = null;
 var callbackURL = null;
-var apiPassword = null;
 
-/*
-io.use((socket, next) => {
-    if(socket.request.headers.instanceId === instanceId && socket.request.headers.password === apiPassword) {
-        next();
-    } else {
-        next(new Error('Authentication error'));
-    }
-});
-*/
+app.listen(5742)
 
 // Hex to Base64
 function hexToBase64(str) {
@@ -87,10 +72,21 @@ var streamsContractABI = smartContracts.streams.abi;
 async function notifyClient(data) {
     return new Promise((resolve, reject) => {
         try {
-            io.emit(data.eventName, data);
-            resolve()
+            console.log({
+                url: callbackURL,
+                method: "POST",
+                json: data
+            });
+            request({
+                url: callbackURL,
+                method: "POST",
+                json: data
+            }, (error, result, body) => {
+                console.log(error, result, body)
+                resolve()
+            })
         } catch(e) {
-            reject(e)
+            resolve()
         }
     })
 }
@@ -1386,7 +1382,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                 if (!err && node.status === "running") {
                     callbackURL = node.callbackURL;
-                    apiPassword = node["api-password"];
                     let blockToScan = (node.blockToScan ? node.blockToScan : 0);
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
                     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));

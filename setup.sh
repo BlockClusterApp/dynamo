@@ -14,7 +14,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
-        REMOTEPORTEVENTS=5742
+        REMOTEPORTSCANNER=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -38,7 +38,7 @@ then
 		    exit
 		fi
 
-        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+        if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
@@ -70,7 +70,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
-        REMOTEPORTEVENTS=5742
+        REMOTEPORTSCANNER=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -94,7 +94,7 @@ then
 		    exit
 		fi
 
-        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+        if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
@@ -126,7 +126,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
-        REMOTEPORTEVENTS=5742
+        REMOTEPORTSCANNER=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -150,7 +150,7 @@ then
 		    exit
 		fi
 
-        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+        if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
