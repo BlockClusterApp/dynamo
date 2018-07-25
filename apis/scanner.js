@@ -42,6 +42,20 @@ Array.prototype.remByVal = function(val) {
     return this;
 }
 
+function parseAndConvertData(data) {
+    try {
+        data = JSON.parse(data)
+        return data;
+    } catch(e) {}
+
+    try {
+        var data = new BigNumber(data)
+        return data.toNumber()
+    } catch(e) {}
+
+    return data;
+}
+
 let smartContracts = require("/dynamo/smart-contracts/index.js");
 
 var assetsContractABI = smartContracts.assets.abi;
@@ -366,80 +380,39 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 		var assets = assetsContract.at(assetsContractAddress);
 		var events = assets.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
-            console.log(events)
 			if(error) {
 				reject(error);
 			} else {
 				try {
 					for(let count = 0; count < events.length; count++) {
 						if (events[count].event === "soloAssetIssued") {
-							try {
-								let number = new BigNumber(events[count].args.uniqueAssetIdentifier)
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: number.toNumber()
-                                	}, {
-                                        owner: events[count].args.to,
-                                        status: "open"
-                                    })
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							} catch(e) {
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: events[count].args.uniqueAssetIdentifier
-                                	}, {
-                                        owner: events[count].args.to,
-										status: "open"
-									})
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							}
-						} else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
-							try {
-								var uniqueAssetIdentifierValue = new BigNumber(events[count].args.uniqueAssetIdentifier)
-								uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-							} catch(e) {
-								uniqueAssetIdentifierValue = events[count].args.uniqueAssetIdentifier
-							}
+                            try {
+                                await upsertSoloAsset({
+                                    instanceId: instanceId,
+                                    assetName: events[count].args.assetName,
+                                    uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+                                }, {
+                                    owner: events[count].args.to,
+                                    status: "open"
+                                })
+                            } catch(e) {
+                                reject(e)
+                                return;
+                            }
 
-							try {
-								let number = new BigNumber(events[count].args.value)
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: uniqueAssetIdentifierValue
-                                	}, {
-										[events[count].args.key]: number.toNumber()
-									})
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							}
-							catch(e){
-                                try {
-                                    await upsertSoloAsset({
-                                        instanceId: instanceId,
-                                        assetName: events[count].args.assetName,
-    									uniqueIdentifier: uniqueAssetIdentifierValue
-                                	}, {
-										[events[count].args.key]: events[count].args.value
-									})
-                                } catch(e) {
-                                    reject(e)
-                                    return;
-                                }
-							}
+						} else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
+                            try {
+                                await upsertSoloAsset({
+                                    instanceId: instanceId,
+                                    assetName: events[count].args.assetName,
+                                    uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+                                }, {
+                                    [events[count].args.key]: parseAndConvertData(events[count].args.value)
+                                })
+                            } catch(e) {
+                                reject(e)
+                                return;
+                            }
 						} else if (events[count].event === "addedOrUpdatedEncryptedDataObjectHash") {
 
                             async function fetchAndWriteEncryptedData(assetName, uniqueAssetIdentifier, encryptedDataHash, privateKey, publicKey, ownerPublicKey) {
@@ -457,19 +430,12 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                     let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
                                     if(plainObj) {
-                                        try {
-                                            var uniqueAssetIdentifierValue = new BigNumber(uniqueAssetIdentifier)
-                                            uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-                                        } catch(e) {
-                                            uniqueAssetIdentifierValue = uniqueAssetIdentifier
-                                        }
-
                                         await upsertSoloAsset({
                                             instanceId: instanceId,
                                             assetName: assetName,
-                                            uniqueIdentifier: uniqueAssetIdentifierValue
+                                            uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
                                         }, {
-                                            [plainObj.key]: plainObj.value
+                                            [plainObj.key]: parseAndConvertData(plainObj.value)
                                         })
                                     }
                                 }
@@ -513,18 +479,11 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                 return;
                             }
 						} else if (events[count].event === "transferredOwnershipOfSoloAsset") {
-							try {
-								var uniqueAssetIdentifierValue = new BigNumber(events[count].args.uniqueAssetIdentifier)
-								uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-							} catch(e) {
-								uniqueAssetIdentifierValue = events[count].args.uniqueAssetIdentifier
-							}
-
                             try {
                                 await upsertSoloAsset({
                                     instanceId: instanceId,
                                     assetName: events[count].args.assetName,
-    								uniqueIdentifier: uniqueAssetIdentifierValue
+    								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                                 }, {
 									owner: events[count].args.to
 								})
@@ -533,18 +492,11 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                 return;
                             }
 						} else if(events[count].event === "closedSoloAsset") {
-							try {
-								var uniqueAssetIdentifierValue = new BigNumber(events[count].args.uniqueAssetIdentifier)
-								uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-							} catch(e) {
-								uniqueAssetIdentifierValue = events[count].args.uniqueAssetIdentifier
-							}
-
                             try {
                                 await upsertSoloAsset({
                                     instanceId: instanceId,
                                     assetName: events[count].args.assetName,
-    								uniqueIdentifier: uniqueAssetIdentifierValue
+    								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                                 }, {
 									status: "closed"
 								})
@@ -686,18 +638,10 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                     let plainObj = await decryptData(impulse.privateKey, impulse.publicKey, ownerPublicKey, capsule, cipherText, impulse.publicKey === ownerPublicKey, dataObj.derivationKey)
 
                                                     if(plainObj) {
-                                                        try {
-                                                            var uniqueAssetIdentifierValue = new BigNumber(pastEvents[iii].args.uniqueAssetIdentifier)
-                                                            uniqueAssetIdentifierValue = uniqueAssetIdentifierValue.toNumber()
-                                                        } catch(e) {
-                                                            uniqueAssetIdentifierValue = uniqueAssetIdentifier
-                                                        }
-
-
                                                         await upsertSoloAsset({
                                                             instanceId: instanceId,
                                                             assetName: pastEvents[iii].args.assetName,
-                                                            uniqueIdentifier: uniqueAssetIdentifierValue
+                                                            uniqueIdentifier: parseAndConvertData(pastEvents[iii].args.uniqueAssetIdentifier)
                                                         }, {
                                                             [plainObj.key]: plainObj.value
                                                         })
