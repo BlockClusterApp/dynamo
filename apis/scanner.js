@@ -42,7 +42,7 @@ Array.prototype.remByVal = function(val) {
     return this;
 }
 
-let smartContracts = require("../smart-contracts/index.js");
+let smartContracts = require("/dynamo/smart-contracts/index.js");
 
 var assetsContractABI = smartContracts.assets.abi;
 var atomicSwapContractABI = smartContracts.atomicSwap.abi;
@@ -83,7 +83,7 @@ async function decryptData(privateKeyHex, publicKeyHex, ownerPublicKeyHex, capsu
     return new Promise((resolve, reject) => {
         try {
             if(decrypt_direct) {
-                exec('python3 /apis/crypto-operations/decrypt.py ' + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + capsule + " " + ciphertext, (error, stdout, stderr) => {
+                exec('python3 /dynamo/apis/crypto-operations/decrypt.py ' + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + capsule + " " + ciphertext, (error, stdout, stderr) => {
                     if(!error) {
                         try {
                             let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
@@ -97,7 +97,7 @@ async function decryptData(privateKeyHex, publicKeyHex, ownerPublicKeyHex, capsu
                     }
                 })
             } else if(!decrypt_direct) {
-                exec("python3 /apis/crypto-operations/decrypt-pre.py '" + derivationKey + "' " + capsule + " " + ciphertext + " " + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + hexToBase64(ownerPublicKeyHex), (error, stdout, stderr) => {
+                exec("python3 /dynamo/apis/crypto-operations/decrypt-pre.py '" + derivationKey + "' " + capsule + " " + ciphertext + " " + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + hexToBase64(ownerPublicKeyHex), (error, stdout, stderr) => {
                     if(!error) {
                         try {
                             let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))

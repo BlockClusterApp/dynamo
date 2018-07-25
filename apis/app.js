@@ -264,7 +264,7 @@ app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
             if(!err && keyPair) {
                 let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
-                exec(`python3 /apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
+                exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
                     if(!error) {
                         stdout = stdout.split(" ")
                         let ciphertext = stdout[0].substr(2).slice(0, -1)
@@ -350,7 +350,7 @@ app.post(`/api/node/${instanceId}/assets/grantAccessToPrivateData`, (req, res) =
         if(!err && keyPair) {
             let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
-            exec('python3 /apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(keyPair.private_key_hex) + " " + req.body.publicKey, (error, stdout, stderr) => {
+            exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(keyPair.private_key_hex) + " " + req.body.publicKey, (error, stdout, stderr) => {
                 if(!error) {
                     let kfrags = stdout
                     let signature = ec.sign(sha3.keccak256(keyPair.compressed_public_key_hex), keyPair.private_key_hex, "hex", {canonical: true});
@@ -728,7 +728,7 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
 
         async function storeData(compressed_public_key_base64, object, streamName, key) {
             return new Promise((resolve, reject) => {
-                exec(`python3 /apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
+                exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
                     if(!error) {
                         console.log(stdout)
                         stdout = stdout.split(" ")
@@ -771,7 +771,7 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
 
         async function generateAndStoreKey(private_key_hex, publicKey) {
             return new Promise((resolve, reject) => {
-                exec('python3 /apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(private_key_hex) + " " + publicKey, (error, stdout, stderr) => {
+                exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(private_key_hex) + " " + publicKey, (error, stdout, stderr) => {
                     if(!error) {
                         let kfrags = stdout
                         let signature = ec.sign(sha3.keccak256(compressed_public_key_hex),  private_key_hex, "hex", {canonical: true});
@@ -863,9 +863,9 @@ async function getDirSize(myFolder) {
 }
 
 app.get(`/api/node/${instanceId}/utility/nodeInfo`, (req, res) => {
-    var genesis = fs.readFileSync('../node/genesis.json', 'utf8');
-    var nodekey = fs.readFileSync('../node/geth/nodekey', 'utf8');
-    var constellationPublicKey = fs.readFileSync('../cnode/node.pub', 'utf8');
+    var genesis = fs.readFileSync('/dynamo/node/genesis.json', 'utf8');
+    var nodekey = fs.readFileSync('/dynamo/node/geth/nodekey', 'utf8');
+    var constellationPublicKey = fs.readFileSync('/dynamo/cnode/node.pub', 'utf8');
     res.send(JSON.stringify({
         "genesis": genesis,
         "nodekey": nodekey,
@@ -874,8 +874,8 @@ app.get(`/api/node/${instanceId}/utility/nodeInfo`, (req, res) => {
 })
 
 app.get(`/api/node/${instanceId}/utility/size`, async (req, res) => {
-    var gethSize = await getDirSize("../node");
-    var constellationSize = await getDirSize("../cnode");
+    var gethSize = await getDirSize("/dynamo/node");
+    var constellationSize = await getDirSize("/dynamo/cnode");
     res.send(JSON.stringify({
         "gethSize": gethSize,
         "constellationSize": constellationSize
@@ -883,7 +883,7 @@ app.get(`/api/node/${instanceId}/utility/size`, async (req, res) => {
 })
 
 app.get(`/api/node/${instanceId}/utility/getPrivateKey`, (req, res) => {
-    var datadir = "../node";
+    var datadir = "/dynamo/node";
     var url_parts = url.parse(req.url, true);
     var address= req.query.address;
     const password = req.query.password;

@@ -11,6 +11,11 @@ RUN apt-get install -y git
 RUN apt-get install -y curl
 RUN apt-get install -y jq
 RUN apt-get install -y sudo
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
+RUN mkdir /dynamo
+WORKDIR /dynamo
 
 RUN apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
@@ -31,8 +36,6 @@ RUN chmod 755 istanbul
 RUN chmod 755 geth
 RUN chmod 755 constellation-node
 
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
 RUN mkdir ./smart-contracts
 ADD smart-contracts ./smart-contracts
 RUN mkdir ./apis

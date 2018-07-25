@@ -4,9 +4,9 @@ then
 	screen -d -m ./constellation.sh
 	sleep 5
 	screen -d -m ./quorum-node.sh
-	screen -L -d -m node apis/app.js
+	screen -L -d -m node ./apis/app.js
 	sleep 10;
-    screen -d -m node apis/init.js
+    screen -d -m node ./apis/init.js
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -52,9 +52,9 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
 	screen -d -m ./quorum-node.sh $2 $3
-	screen -L -d -m node apis/app.js
+	screen -L -d -m node ./apis/app.js
 	sleep 10;
-    screen -d -m node apis/init.js
+    screen -d -m node ./apis/init.js
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -100,9 +100,9 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
 	screen -d -m ./quorum-node.sh $2 $3 $4
-	screen -L -d -m node apis/app.js
+	screen -L -d -m node ./apis/app.js
 	sleep 10;
-    screen -d -m node apis/init.js
+    screen -d -m node ./apis/init.js
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
