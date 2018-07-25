@@ -14,6 +14,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
+        REMOTEPORTEVENTS=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -34,6 +35,13 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
+		    exit
+		fi
+
+        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+			sleep 5;
+		else
+			echo "Failed due to 5742";
 		    exit
 		fi
 
@@ -62,6 +70,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
+        REMOTEPORTEVENTS=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -82,6 +91,13 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
+		    exit
+		fi
+
+        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+			sleep 5;
+		else
+			echo "Failed due to 5742";
 		    exit
 		fi
 
@@ -110,6 +126,7 @@ then
 		REMOTEPORTRPC=8545
 		REMOTEPORTCONSTELLATION=9001
 		REMOTEPORTREADFILE=6382
+        REMOTEPORTEVENTS=5742
 		TIMEOUT=5
 
 		if nc -zv $REMOTEHOST $REMOTEPORTETH; then
@@ -130,6 +147,13 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
+		    exit
+		fi
+
+        if nc -zv $REMOTEHOST $REMOTEPORTEVENTS; then
+			sleep 5;
+		else
+			echo "Failed due to 5742";
 		    exit
 		fi
 

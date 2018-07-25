@@ -1,6 +1,5 @@
 var Web3 = require("web3");
 var MongoClient = require("mongodb").MongoClient;
-var db = null;
 const request = require('request');
 var BigNumber = require('bignumber.js');
 var sha256 = require('sha256');
@@ -14,6 +13,29 @@ let exec = require("child_process").exec;
 var base64 = require('base-64');
 var btoa = require('btoa');
 var atob = require('atob');
+
+const server = require('http').createServer();
+
+const io = require('socket.io')(server, {
+  path: "/api/node/" + process.env.instanceId + "/events",
+  transports: ['polling']
+});
+
+server.listen(5742);
+
+var db = null;
+var callbackURL = null;
+var apiPassword = null;
+
+/*
+io.use((socket, next) => {
+    if(socket.request.headers.instanceId === instanceId && socket.request.headers.password === apiPassword) {
+        next();
+    } else {
+        next(new Error('Authentication error'));
+    }
+});
+*/
 
 // Hex to Base64
 function hexToBase64(str) {
@@ -61,6 +83,17 @@ let smartContracts = require("/dynamo/smart-contracts/index.js");
 var assetsContractABI = smartContracts.assets.abi;
 var atomicSwapContractABI = smartContracts.atomicSwap.abi;
 var streamsContractABI = smartContracts.streams.abi;
+
+async function notifyClient(data) {
+    return new Promise((resolve, reject) => {
+        try {
+            io.emit(data.eventName, data);
+            resolve()
+        } catch(e) {
+            reject(e)
+        }
+    })
+}
 
 async function queryImpulse(query, privateKeyHex, publicKeyHex, ownerPublicKeyHex) {
     return new Promise((resolve, reject) => {
@@ -335,6 +368,8 @@ async function blockExists(web3, blockNumber) {
     })
 }
 
+
+
 async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts) {
 	fetchTxn = async (web3, txnHash) => {
 		return new Promise((resolve, reject) => {
@@ -530,7 +565,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                     } else {
                         try {
         					for(let count = 0; count < events.length; count++) {
-                                console.log(events[count])
                                 var eventHash = sha256(JSON.stringify(events[count]));
         						if (events[count].event === "soloAssetIssued") {
         							try {
@@ -540,6 +574,18 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash
                                         }, {
+                                            owner: events[count].args.to,
+                                            status: "open",
+                                            eventName: "soloAssetIssued",
+                                            timestamp: parseInt(blockDetails.timestamp),
+                                            transactionHash: events[count].transactionHash
+                                        })
+
+                                        await notifyClient({
+                                            instanceId: instanceId,
+                                            assetName: events[count].args.assetName,
+                                            uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                                            eventHash: eventHash,
                                             owner: events[count].args.to,
                                             status: "open",
                                             eventName: "soloAssetIssued",
@@ -564,6 +610,18 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             timestamp: parseInt(blockDetails.timestamp),
                                             transactionHash: events[count].transactionHash
                                         })
+
+                                        await notifyClient({
+                                            instanceId: instanceId,
+                                            assetName: events[count].args.assetName,
+                                            uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                                            eventHash: eventHash,
+                                            eventName: "addedOrUpdatedSoloAssetExtraData",
+                                            key: events[count].args.key,
+                                            value: events[count].args.value,
+                                            timestamp: parseInt(blockDetails.timestamp),
+                                            transactionHash: events[count].transactionHash
+                                        })
         							}
         							catch(e){
                                         reject(e)
@@ -582,6 +640,17 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             timestamp: parseInt(blockDetails.timestamp),
                                             transactionHash: events[count].transactionHash
         								})
+
+                                        await notifyClient({
+                                            instanceId: instanceId,
+                                            assetName: events[count].args.assetName,
+            								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                                            eventHash: eventHash,
+                                            owner: events[count].args.to,
+                                            eventName: "transferredOwnershipOfSoloAsset",
+                                            timestamp: parseInt(blockDetails.timestamp),
+                                            transactionHash: events[count].transactionHash
+                                        })
                                     } catch(e) {
                                         reject(e)
                                         return;
@@ -599,6 +668,17 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             timestamp: parseInt(blockDetails.timestamp),
                                             transactionHash: events[count].transactionHash
         								})
+
+                                        await notifyClient({
+                                            instanceId: instanceId,
+                                            assetName: events[count].args.assetName,
+            								uniqueIdentifier: events[count].args.uniqueIdentifier,
+                                            eventHash: eventHash,
+                                            status: "closed",
+                                            eventName: "closedSoloAsset",
+                                            timestamp: parseInt(blockDetails.timestamp),
+                                            transactionHash: events[count].transactionHash
+                                        })
                                     } catch(e) {
                                         reject(e)
                                         return;
@@ -621,6 +701,17 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                 transactionHash: events[count].transactionHash,
                                                 publicKey: events[count].args.publicKey
             								})
+
+                                            await notifyClient({
+                                                instanceId: instanceId,
+                                                assetName: events[count].args.assetName,
+                								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                                                eventHash: eventHash,
+                                                eventName: "soloAssetAccessGranted",
+                                                timestamp: parseInt(blockDetails.timestamp),
+                                                transactionHash: events[count].transactionHash,
+                                                publicKey: events[count].args.publicKey
+                                            })
                                         } else if (hexToBase64(impulse.publicKey) === events[count].args.publicKey) {
                                             let pastEvents = await getEncryptedDataEventsOfAsset(web3, assets, events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
 
@@ -658,6 +749,18 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                             key: plainObj.key,
                                                             value: plainObj.value
                                                         })
+
+                                                        await notifyClient({
+                                                            instanceId: instanceId,
+                                                            assetName: pastEvents[iii].args.assetName,
+                                                            uniqueIdentifier: uniqueAssetIdentifierValue,
+                                                            eventHash: sha256(JSON.stringify(pastEvents[iii])),
+                                                            eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                                                            timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
+                                                            transactionHash: pastEvents[iii].transactionHash,
+                                                            key: plainObj.key,
+                                                            value: plainObj.value
+                                                        })
                                                     }
                                                 }
                                             }
@@ -683,6 +786,17 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                 transactionHash: events[count].transactionHash,
                                                 publicKey: events[count].args.publicKey
             								})
+
+                                            await notifyClient({
+                                                instanceId: instanceId,
+                                                assetName: events[count].args.assetName,
+                								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                                                eventHash: eventHash,
+                                                eventName: "soloAssetAccessRevoked",
+                                                timestamp: parseInt(blockDetails.timestamp),
+                                                transactionHash: events[count].transactionHash,
+                                                publicKey: events[count].args.publicKey
+                                            })
                                         }
                                     } catch(e) {
                                         reject(e)
@@ -711,6 +825,18 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                     uniqueIdentifier: uniqueAssetIdentifier,
                                                     eventHash: eventHash
                                                 }, {
+                                                    eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                                                    timestamp: timestamp,
+                                                    transactionHash: transactionHash,
+                                                    key: plainObj.key,
+                                                    value: plainObj.value
+                                                })
+
+                                                await notifyClient({
+                                                    instanceId: instanceId,
+                                                    assetName: assetName,
+                                                    uniqueIdentifier: uniqueAssetIdentifier,
+                                                    eventHash: eventHash,
                                                     eventName: "addedOrUpdatedEncryptedDataObjectHash",
                                                     timestamp: timestamp,
                                                     transactionHash: transactionHash,
@@ -800,6 +926,20 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 units: 0,
                                 parts: events[count].args.parts.toString()
                             })
+
+                            await notifyClient({
+                                instanceId: instanceId,
+                                type: "bulk",
+                                assetName: events[count].args.assetName,
+                                uniqueIdentifier: events[count].args.uniqueIdentifier,
+                                admin: events[count].args.admin,
+                                units: 0,
+                                parts: events[count].args.parts.toString(),
+                                eventHash: sha256(JSON.stringify(events[count])),
+                                eventName: "bulkAssetTypeCreated",
+                                transactionHash: events[count].transactionHash,
+                                timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+                            })
                         } else if (events[count].event === "bulkAssetsIssued") {
                             await upsertAssetTypes({
                                 instanceId: instanceId,
@@ -807,6 +947,17 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 assetName: events[count].args.assetName
                             }, {type: "bulk"}, {
                                 units: events[count].args.units.toNumber()
+                            })
+
+                            await notifyClient({
+                                instanceId: instanceId,
+                                type: "bulk",
+                                assetName: events[count].args.assetName,
+                                units: events[count].args.units.toNumber(),
+                                eventHash: sha256(JSON.stringify(events[count])),
+                                eventName: "bulkAssetsIssued",
+                                transactionHash: events[count].transactionHash,
+                                timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                             })
 						} else if (events[count].event === "soloAssetTypeCreated") {
                             await upsertAssetTypes({
@@ -817,6 +968,19 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
                                 admin: events[count].args.authorizedIssuer,
                                 units: 0
+                            })
+
+                            await notifyClient({
+                                instanceId: instanceId,
+                                type: "solo",
+                                assetName: events[count].args.assetName,
+                                uniqueIdentifier: events[count].args.uniqueIdentifier,
+                                admin: events[count].args.authorizedIssuer,
+                                units: 0,
+                                eventHash: sha256(JSON.stringify(events[count])),
+                                eventName: "soloAssetTypeCreated",
+                                transactionHash: events[count].transactionHash,
+                                timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                             })
 						} else if (events[count].event === "soloAssetIssued") {
                             await upsertAssetTypes({
@@ -875,6 +1039,29 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
                                     status: atomicSwapStatus.toString(),
                                     secret: atomicSwapSecret
                                 })
+
+                                await notifyClient({
+                                    instanceId: instanceId,
+                            		atomicSwapHash: events[count].args.hash,
+                                    fromAddress: atomicSwapDetails[0],
+                                    toAddress: atomicSwapDetails[1],
+                                    fromAssetType: atomicSwapDetails[2],
+                                    fromAssetName: atomicSwapDetails[3],
+                                    fromAssetUnits: atomicSwapDetails[4].toString(),
+                                    fromAssetId: atomicSwapDetails[5],
+                                    fromLockPeriod: atomicSwapDetails[6].toString(),
+                                    toAssetType: atomicSwapOtherChainDetails[0],
+                                    toAssetName: atomicSwapOtherChainDetails[1],
+                                    toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
+                                    toAssetId: atomicSwapOtherChainDetails[3],
+                                    toGenesisBlockHash: atomicSwapOtherChainDetails[4],
+                                    status: atomicSwapStatus.toString(),
+                                    secret: atomicSwapSecret,
+                                    eventHash: sha256(JSON.stringify(events[count])),
+                                    eventName: "assetLocked",
+                                    transactionHash: events[count].transactionHash,
+                                    timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+                                })
                             } catch(e) {
                                 reject(e)
                                 return;
@@ -923,6 +1110,17 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
                                     }, {
                                         key: plainObj.key,
                                         data: plainObj.value
+                                    })
+
+                                    await notifyClient({
+                                        instanceId: instanceId,
+                                        streamName: events[count].args.streamName,
+                                        eventHash: sha256(JSON.stringify(events[count])),
+                                        eventName: "assetLocked",
+                                        key: plainObj.key,
+                                        data: plainObj.value,
+                                        transactionHash: events[count].transactionHash,
+                                        timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                                     })
                                 }
                             }
@@ -1065,6 +1263,19 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
                                     streamNameHash: events[count].args.streamNameHash,
                                     admin: events[count].args.admin
                                 })
+
+                                await notifyClient({
+                                    instanceId: instanceId,
+                                    streamName: events[count].args.streamName,
+                                    streamNameHash: events[count].args.streamNameHash,
+                                    admin: events[count].args.admin,
+                                    eventHash: sha256(JSON.stringify(events[count])),
+                                    eventName: "created",
+                                    key: plainObj.key,
+                                    data: plainObj.value,
+                                    transactionHash: events[count].transactionHash,
+                                    timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+                                })
                             } catch(e) {
                                 reject(e)
                                 return;
@@ -1174,7 +1385,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         let scan = async function() {
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                 if (!err && node.status === "running") {
-
+                    callbackURL = node.callbackURL;
+                    apiPassword = node["api-password"];
                     let blockToScan = (node.blockToScan ? node.blockToScan : 0);
                     let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
                     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
