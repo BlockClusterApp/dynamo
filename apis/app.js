@@ -88,6 +88,41 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
 app.use(bodyParser.json())
 
+app.post(`/api/node/${instanceId}/assets/createAssetType`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+    var assets = assetsContract.at(network.assetsContractAddress);
+
+    if (req.body.assetType === "solo") {
+        assets.createSoloAssetType.sendTransaction(req.body.assetName, {
+            from: req.body.assetIssuer,
+            gas: '99999999999999999'
+        }, function(error, txnHash) {
+            if (!error) {
+                res.send({"txnHash": txnHash})
+            } else {
+                res.send({"error": err.toString()})
+            }
+        })
+    } else {
+        if(req.body.parts > 18) {
+            res.send({"error": "Invalid parts"})
+        } else {
+            assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, {
+                from: req.body.assetIssuer,
+                gas: '99999999999999999'
+            }, function(error, txnHash) {
+                if (!error) {
+                    res.send({"txnHash": txnHash})
+                } else {
+                    res.send({"error": err.toString()})
+                }
+            })
+        }
+
+    }
+})
+
 app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -116,7 +151,7 @@ app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
                 gas: '4712388'
             }, function(error, txnHash){
                 if(error) {
-                    res.send(JSON.stringify({"error": error.toString()}))
+                    res.send({"error": error.toString()})
                 } else {
                     for(let key in req.body.data) {
                         assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, req.body.data[key], {
@@ -125,11 +160,11 @@ app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
                         })
                     }
 
-                    res.send(JSON.stringify({"txnHash": txnHash}))
+                    res.send({"txnHash": txnHash})
                 }
             })
         } else {
-            res.send(JSON.stringify({"error": err.toString()}))
+            res.send({"error": err.toString()})
         }
     });
 })
@@ -141,14 +176,14 @@ app.post(`/api/node/${instanceId}/assets/issueBulkAsset`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var parts = assets.getBulkAssetParts.call(req.body.assetName)
     let units = (new BigNumber(req.body.units)).multipliedBy(addZeros(1, parts))
-    assets.issueBulkAsset.sendTransaction(req.body.assetName, units, req.body.toAccount, {
+    assets.issueBulkAsset.sendTransaction(req.body.assetName, units.toString(), req.body.toAccount, {
         from: req.body.fromAccount,
         gas: '4712388'
     }, function(error, txnHash){
         if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+            res.send({"error": error.toString()})
         } else {
-            res.send(JSON.stringify({"txnHash": txnHash}))
+            res.send({"txnHash": txnHash})
         }
     })
 })
@@ -162,9 +197,9 @@ app.post(`/api/node/${instanceId}/assets/transferSoloAsset`, (req, res) => {
         gas: '4712388'
     }, function(error, txnHash){
         if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+            res.send({"error": error.toString()})
         } else {
-            res.send(JSON.stringify({"txnHash": txnHash}))
+            res.send({"txnHash": txnHash})
         }
     })
 })
@@ -176,48 +211,56 @@ app.post(`/api/node/${instanceId}/assets/transferBulkAsset`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var parts = assets.getBulkAssetParts.call(req.body.assetName)
     let units = (new BigNumber(req.body.units)).multipliedBy(addZeros(1, parts))
-    assets.transferBulkAssetUnits.sendTransaction(req.body.assetName, req.body.toAccount, units, {
+    assets.transferBulkAssetUnits.sendTransaction(req.body.assetName, req.body.toAccount, units.toString(), {
         from: req.body.fromAccount,
         gas: '4712388'
     }, function(error, txnHash){
         if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+            res.send({"error": error.toString()})
         } else {
-            res.send(JSON.stringify({"txnHash": txnHash}))
+            res.send({"txnHash": txnHash})
         }
     })
 })
 
+function parseAndConvertData(data) {
+    try {
+        var temp = JSON.parse(data)
+        return temp;
+    } catch(e) {}
+
+    try {
+        var temp = new BigNumber(data)
+
+        if(temp.isNaN() === true) {
+            return data;
+        } else {
+            return temp.toNumber()
+        }
+    } catch(e) {}
+}
+
 app.post(`/api/node/${instanceId}/assets/getSoloAssetInfo`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
-    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
-    var assets = assetsContract.at(network.assetsContractAddress);
+    try {
+        var query = {};
+        query.instanceId = instanceId;
+        query.assetName = req.body.assetName;
+        query.uniqueIdentifier = parseAndConvertData(req.body.identifier);
 
-    assets.isSoloAssetClosed.call(req.body.assetName, req.body.identifier, {from: web3.eth.accounts[0]}, function(error, isClosed){
-        if(!error) {
-            assets.getSoloAssetOwner.call(req.body.assetName, req.body.identifier, {from: web3.eth.accounts[0]}, function(error, owner){
-                if(!error) {
-
-                    let extraData = {};
-
-                    for(let count = 0; count < req.body.extraData.length; count++){
-                        extraData[req.body.extraData[count]] = assets.getSoloAssetExtraData.call(req.body.assetName, req.body.identifier, req.body.extraData[count])
-                    }
-
-                    res.send(JSON.stringify({"details": {
-                        isClosed: isClosed,
-                        owner: owner,
-                        extraData: extraData
-                    }}))
-                } else {
-                    res.send(JSON.stringify({"error": error.toString()}))
-                }
-            })
-        } else {
-            res.send(JSON.stringify({"error": error.toString()}))
-        }
-    })
+        db.collection("soloAssets").findOne(query, function(err, result) {
+            if(err) {
+                res.send({"error": err.toString()})
+            } else if(result) {
+                res.send(result)
+            } else {
+                res.send({"error": result.toString()})
+            }
+        });
+    } catch(e) {
+        res.send({"error": e.toString()})
+    }
 })
 
 app.post(`/api/node/${instanceId}/assets/getBulkAssetBalance`, (req, res) => {
@@ -225,13 +268,13 @@ app.post(`/api/node/${instanceId}/assets/getBulkAssetBalance`, (req, res) => {
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
-    var parts = assets.getBulkAssetParts.call(assetName)
+    var parts = assets.getBulkAssetParts.call(req.body.assetName)
     assets.getBulkAssetUnits.call(req.body.assetName, req.body.account, {from: web3.eth.accounts[0]}, function(error, units){
         if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+            res.send({"error": error.toString()})
         } else {
             units = (new BigNumber(units)).dividedBy(addZeros(1, parts)).toFixed(parseInt(parts))
-            res.send(JSON.stringify({"units": units.toString()}))
+            res.send({"units": units.toString()})
         }
     })
 })
@@ -290,30 +333,30 @@ app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
                         }, (error, result, body) => {
                             if(!error) {
                                 if(body.error) {
-                                    res.send(JSON.stringify({"error": body.error.toString()}))
+                                    res.send({"error": body.error.toString()})
                                 } else {
                                     assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
                                         from: req.body.fromAccount,
                                         gas: '4712388'
                                     }, function(error, txnHash){
                                         if(error) {
-                                            res.send(JSON.stringify({"error": error.toString()}))
+                                            res.send({"error": error.toString()})
                                         } else {
-                                            res.send(JSON.stringify({"txnHash": txnHash}))
+                                            res.send({"txnHash": txnHash})
                                         }
                                     })
                                 }
                             } else {
-                                res.send(JSON.stringify({"error": error.toString()}))
+                                res.send({"error": error.toString()})
                             }
                         })
 
                     } else {
-                        res.send(JSON.stringify({"error": error.toString()}))
+                        res.send({"error": error.toString()})
                     }
                 })
             } else {
-                res.send(JSON.stringify({"error": "You are not the owner of the private key required for signing meta data"}))
+                res.send({"error": "You are not the owner of the private key required for signing meta data"})
             }
         })
     } else {
@@ -322,9 +365,9 @@ app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
             gas: '4712388'
         }, function(error, txnHash){
             if(error) {
-                res.send(JSON.stringify({"error": error.toString()}))
+                res.send({"error": error.toString()})
             } else {
-                res.send(JSON.stringify({"txnHash": txnHash}))
+                res.send({"txnHash": txnHash})
             }
         })
     }
@@ -367,31 +410,31 @@ app.post(`/api/node/${instanceId}/assets/grantAccessToPrivateData`, (req, res) =
                     }, (error, result, body) => {
                         if(!error) {
                             if(body.error) {
-                                res.send(JSON.stringify({"error": body.error.toString()}))
+                                res.send({"error": body.error.toString()})
                             } else {
                                 assets.soloAssetGrantAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
                                     from: req.body.fromAccount,
                                     gas: '4712388'
                                 }, function(error, txnHash){
                                     if(error) {
-                                        res.send(JSON.stringify({"error": error.toString()}))
+                                        res.send({"error": error.toString()})
                                     } else {
-                                        res.send(JSON.stringify({"txnHash": txnHash}))
+                                        res.send({"txnHash": txnHash})
                                     }
                                 })
                             }
                         } else {
-                            res.send(JSON.stringify({"error": error.toString()}))
+                            res.send({"error": error.toString()})
                         }
                     })
                 } else {
-                    res.send(JSON.stringify({"error": error.toString()}))
+                    res.send({"error": error.toString()})
                 }
             })
 
 
         } else {
-            res.send(JSON.stringify({"error": err.toString()}))
+            res.send({"error": err.toString()})
         }
     })
 })
@@ -428,25 +471,25 @@ app.post(`/api/node/${instanceId}/assets/revokeAccessToPrivateData`, (req, res) 
             }, (error, result, body) => {
                 if(!error) {
                     if(body.error) {
-                        res.send(JSON.stringify({"error": body.error.toString()}))
+                        res.send({"error": body.error.toString()})
                     } else {
                         assets.soloAssetRevokeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
                             from: req.body.fromAccount,
                             gas: '4712388'
                         }, function(error, txnHash){
                             if(error) {
-                                res.send(JSON.stringify({"error": error.toString()}))
+                                res.send({"error": error.toString()})
                             } else {
-                                res.send(JSON.stringify({"txnHash": txnHash}))
+                                res.send({"txnHash": txnHash})
                             }
                         })
                     }
                 } else {
-                    res.send(JSON.stringify({"error": error.toString()}))
+                    res.send({"error": error.toString()})
                 }
             })
         } else {
-            res.send(JSON.stringify({"error": err.toString()}))
+            res.send({"error": err.toString()})
         }
     })
 })
@@ -462,9 +505,9 @@ app.post(`/api/node/${instanceId}/assets/closeAsset`, (req, res) => {
         gas: '4712388'
     }, function(error, txnHash){
         if(error) {
-            res.send(JSON.stringify({"error": error.toString()}))
+            res.send({"error": error.toString()})
         } else {
-            res.send(JSON.stringify({"txnHash": txnHash}))
+            res.send({"txnHash": txnHash})
         }
     })
 })
@@ -517,138 +560,146 @@ app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
                                             }, (error, txnHash) => {
 
                                             if (!error) {
-                                                res.send(JSON.stringify({"txnHash": txnHash, "orderId": hash}))
+                                                res.send({"txnHash": txnHash, "orderId": hash})
                                             } else {
-                                                res.send(JSON.stringify({"error": error.toString()}))
+                                                res.send({"error": error.toString()})
                                             }
                                         })
                                     } else {
-                                        res.send(JSON.stringify({"error": error.toString()}))
+                                        res.send({"error": error.toString()})
                                     }
                             })
                         } else {
-                            res.send(JSON.stringify({"error": "Unknown Error Occured"}))
+                            res.send({"error": "Unknown Error Occured"})
                         }
                     });
                 } else {
-                    res.send(JSON.stringify({"error": error.toString()}))
+                    res.send({"error": error.toString()})
                 }
             })
         } else {
             console.log(err);
-            res.send(JSON.stringify({"error": "Unknown Error Occured"}))
+            res.send({"error": "Unknown Error Occured"})
         }
     })
 })
 
 app.post(`/api/node/${instanceId}/assets/fulfillOrder`, (req, res) => {
-    let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch()[0];
-    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-    var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
-    var atomicSwap = atomicSwapContract.at(toNetwork.atomicSwapContractAddress);
-    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
-    var assets = assetsContract.at(toNetwork.assetsContractAddress);
-
-    db.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
-        if(!err && node) {
-            let toNetwork = node;
-
-            if(toNetwork.genesisBlockHash === order.toGenesisBlockHash) {
-                assets.approve.sendTransaction(
-                    order.toAssetType,
-                    order.toAssetName,
-                    order.toAssetId,
-                    order.toAssetUnits,
-                    network.atomicSwapContractAddress, {
-                        from: order.toAddress,
-                        gas: '99999999999999999'
-                    }, (error) => {
-                        if (!error) {
-                            atomicSwap.claim.sendTransaction(
-                                req.body.orderId,
-                                "", {
-                                    from: order.toAddress,
-                                    gas: '99999999999999999'
-                                }, Meteor.bindEnvironment(function(error, txHash) {
-                                    if (error) {
-                                        res.send(JSON.stringify({"error": error.toString()}))
-                                    } else {
-                                        res.send(JSON.stringify({"txnHash": txHash}))
-                                    }
-                                }))
-                        } else {
-                            res.send(JSON.stringify({"error": error.toString()}))
-                        }
-                    }
-                )
-            } else {
-                db.collection("acceptedOrders").insertOne({
-                    "instanceId": instanceId,
-                    "buyerInstanceId": req.body.toNetworkId,
-                    "hash": req.body.orderId
-                }, (err) => {
-                    if(!err) {
+    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+        if(!err && order) {
+            let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+            db.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
+                if(!err && node) {
+                    let toNetwork = node;
+                    var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
+                    var atomicSwap = atomicSwapContract.at(toNetwork.atomicSwapContractAddress);
+                    var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+                    var assets = assetsContract.at(toNetwork.assetsContractAddress);
+                    if(network.genesisBlockHash === order.toGenesisBlockHash) {
                         assets.approve.sendTransaction(
                             order.toAssetType,
                             order.toAssetName,
                             order.toAssetId,
                             order.toAssetUnits,
-                            toNetwork.atomicSwapContractAddress, {
+                            network.atomicSwapContractAddress, {
                                 from: order.toAddress,
                                 gas: '99999999999999999'
                             }, (error) => {
                                 if (!error) {
-
-                                    let expiryTimestamp = order.fromLockPeriod;
-                                    let currentTimestamp = new Date().getTime() / 1000;
-                                    let newMin = null;
-
-                                    if(expiryTimestamp - currentTimestamp <= 0) {
-                                        res.send(JSON.stringify({"error": "Order has expired"}))
-                                        return;
-                                    } else {
-                                        let temp = currentTimestamp + ((expiryTimestamp - currentTimestamp) / 2)
-                                        temp = (temp - currentTimestamp) / 60;
-                                        newMin = temp;
-                                    }
-
-                                    atomicSwap.lock.sendTransaction(
-                                        order.fromAddress,
+                                    atomicSwap.claim.sendTransaction(
                                         req.body.orderId,
-                                        newMin,
-                                        order.toAssetType,
-                                        order.toAssetName,
-                                        order.toAssetId,
-                                        order.toAssetUnits,
-                                        order.fromAssetType,
-                                        order.fromAssetName,
-                                        order.fromAssetUnits,
-                                        order.fromAssetId,
-                                        network.genesisBlockHash, {
+                                        "", {
                                             from: order.toAddress,
                                             gas: '99999999999999999'
-                                        },
-                                        (error, txnHash) => {
-                                            if (!error) {
-                                                res.send(JSON.stringify({"txnHash": txnHash}))
+                                        }, function(error, txHash) {
+                                            if (error) {
+                                                res.send({"error": error.toString()})
                                             } else {
-                                                res.send(JSON.stringify({"error": error.toString()}))
+                                                res.send({"txnHash": txHash})
                                             }
                                         })
                                 } else {
-                                    res.send(JSON.stringify({"error": error.toString()}))
+                                    res.send({"error": error.toString()})
                                 }
                             }
                         )
                     } else {
-                        res.send(JSON.stringify({"error": error.toString()}))
+                        let web3 = new Web3(new Web3.providers.HttpProvider(`http://${node.workerNodeIP}:${node.rpcNodePort}`));
+                        var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
+                        var atomicSwap = atomicSwapContract.at(toNetwork.atomicSwapContractAddress);
+                        var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+                        var assets = assetsContract.at(toNetwork.assetsContractAddress);
+                        db.collection("acceptedOrders").insertOne({
+                            "instanceId": instanceId,
+                            "buyerInstanceId": req.body.toNetworkId,
+                            "hash": req.body.orderId
+                        }, (err) => {
+                            if(!err) {
+                                assets.approve.sendTransaction(
+                                    order.toAssetType,
+                                    order.toAssetName,
+                                    order.toAssetId,
+                                    order.toAssetUnits,
+                                    toNetwork.atomicSwapContractAddress, {
+                                        from: order.toAddress,
+                                        gas: '99999999999999999'
+                                    }, (error) => {
+                                        if (!error) {
+
+                                            let expiryTimestamp = order.fromLockPeriod;
+                                            let currentTimestamp = new Date().getTime() / 1000;
+                                            let newMin = null;
+
+                                            if(expiryTimestamp - currentTimestamp <= 0) {
+                                                res.send({"error": "Order has expired"})
+                                                return;
+                                            } else {
+                                                let temp = currentTimestamp + ((expiryTimestamp - currentTimestamp) / 2)
+                                                temp = (temp - currentTimestamp) / 60;
+                                                newMin = temp;
+                                            }
+
+                                            atomicSwap.lock.sendTransaction(
+                                                order.fromAddress,
+                                                req.body.orderId,
+                                                newMin,
+                                                order.toAssetType,
+                                                order.toAssetName,
+                                                order.toAssetId,
+                                                order.toAssetUnits,
+                                                order.fromAssetType,
+                                                order.fromAssetName,
+                                                order.fromAssetUnits,
+                                                order.fromAssetId,
+                                                network.genesisBlockHash, {
+                                                    from: order.toAddress,
+                                                    gas: '99999999999999999'
+                                                },
+                                                (error, txnHash) => {
+                                                    if (!error) {
+                                                        res.send({"txnHash": txnHash})
+                                                    } else {
+                                                        res.send({"error": error.toString()})
+                                                    }
+                                                })
+                                        } else {
+                                            res.send({"error": error.toString()})
+                                        }
+                                    }
+                                )
+                            } else {
+                                res.send({"error": error.toString()})
+                            }
+                        })
                     }
-                })
-            }
+                } else {
+                    res.send({"error": "Unknown Error Occured"})
+                }
+            })
         } else {
-            console.log(err);
-            res.send(JSON.stringify({"error": "Unknown Error Occured"}))
+            res.send({"error": err})
         }
+
     })
 })
 
@@ -660,30 +711,34 @@ app.post(`/api/node/${instanceId}/assets/cancelOrder`, (req, res) => {
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
 
-    let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch()[0];
-
-    atomicSwap.unlock.sendTransaction(
-        req.body.orderId, {
-            from: order.fromAddress,
-            gas: '99999999999999999'
-        },
-        function(error, txHash) {
-            if (error) {
-                res.send(JSON.stringify({"error": error.toString()}))
-            } else {
-                res.send(JSON.stringify({"txnHash": txHash}))
-            }
+    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+        if(!err && order) {
+            atomicSwap.unlock.sendTransaction(
+                req.body.orderId, {
+                    from: order.fromAddress,
+                    gas: '99999999999999999'
+                },
+                function(error, txHash) {
+                    if (error) {
+                        res.send({"error": error.toString()})
+                    } else {
+                        res.send({"txnHash": txHash})
+                    }
+                }
+            )
+        } else {
+            res.send({"error": err})
         }
-    )
+    })
 })
 
 app.post(`/api/node/${instanceId}/assets/getOrderInfo`, (req, res) => {
     let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch();
 
     if(order[0]) {
-        res.send(JSON.stringify(order[0]))
+        res.send(order[0])
     } else {
-        res.send(JSON.stringify({"error": "Order not found"}))
+        res.send({"error": "Order not found"})
     }
 })
 
@@ -693,9 +748,9 @@ app.post(`/api/node/${instanceId}/assets/search`, (req, res) => {
 
     db.collection("soloAssets").find(query, function(err, result) {
         if(err) {
-            res.send(JSON.stringify({"error": "Search Error Occured"}))
+            res.send({"error": "Search Error Occured"})
         } else {
-            res.send(JSON.stringify(result))
+            res.send(result)
         }
     });
 })
@@ -706,11 +761,28 @@ app.post(`/api/node/${instanceId}/streams/search`, (req, res) => {
 
     db.collection("streamsItems").find(query, function(err, result) {
         if(err) {
-            res.send(JSON.stringify({"error": "Search Error Occured"}))
+            res.send({"error": "Search Error Occured"})
         } else {
-            res.send(JSON.stringify(result))
+            res.send(result)
         }
     });
+})
+
+app.post(`/api/node/${instanceId}/assets/createStream`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+    var streams = streamsContract.at(network.streamsContractAddress);
+
+    streams.createStream.sendTransaction(req.body.streamName, {
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
+    }, function(error, txnHash) {
+        if (!error) {
+            res.send({"txhash": txnHash})
+        } else {
+            res.send({"error": "Search Error Occured"})
+        }
+    })
 })
 
 app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
@@ -730,7 +802,6 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
             return new Promise((resolve, reject) => {
                 exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
                     if(!error) {
-                        console.log(stdout)
                         stdout = stdout.split(" ")
                         let ciphertext = stdout[0].substr(2).slice(0, -1)
                         let capsule = stdout[1].substr(2).slice(0, -2)
@@ -825,16 +896,16 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
                         from: req.body.fromAccount
                     }, function(error, txnHash) {
                         if (!error) {
-                            res.send(JSON.stringify({"txnHash": txnHash}))
+                            res.send({"txnHash": txnHash})
                         } else {
-                            res.send(JSON.stringify({"error": error.toString()}))
+                            res.send({"error": error.toString()})
                         }
                     })
                 } catch(e) {
-                    res.send(JSON.stringify({"error": e}))
+                    res.send({"error": e})
                 }
             } else {
-                res.send(JSON.stringify({"error": "An unknown error occured"}))
+                res.send({"error": "An unknown error occured"})
             }
         })
     } else {
@@ -842,9 +913,9 @@ app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
             from: req.body.fromAccount
         }, function(error, txnHash) {
             if (!error) {
-                res.send(JSON.stringify({"txnHash": txnHash}))
+                res.send({"txnHash": txnHash})
             } else {
-                res.send(JSON.stringify({"error": error.toString()}))
+                res.send({"error": error.toString()})
             }
         })
     }
@@ -862,24 +933,96 @@ async function getDirSize(myFolder) {
     })
 }
 
+app.post(`/api/node/${instanceId}/utility/vote`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    web3.currentProvider.sendAsync({
+        method: "istanbul_propose",
+        params: [req.body.toVote, true],
+        jsonrpc: "2.0",
+        id: new Date().getTime()
+    }, function(error, result) {
+        if (error) {
+            res.send({"error": "An unknown error occured"})
+        } else {
+            res.send({})
+        }
+    })
+})
+
+app.post(`/api/node/${instanceId}/utility/unVote`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    web3.currentProvider.sendAsync({
+        method: "istanbul_propose",
+        params: [req.body.toUnvote, false],
+        jsonrpc: "2.0",
+        id: new Date().getTime()
+    }, function(error, result) {
+        if (error) {
+            res.send({"error": "An unknown error occured"})
+        } else {
+            res.send({})
+        }
+    })
+})
+
+app.post(`/api/node/${instanceId}/utility/createAccount`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    web3.currentProvider.sendAsync({
+        method: "personal_newAccount",
+        params: [req.body.password],
+        jsonrpc: "2.0",
+        id: new Date().getTime()
+    }, function(error, result) {
+        if (error) {
+            res.send({"error": "An unknown error occured"})
+        } else {
+            web3.currentProvider.sendAsync({
+                method: "personal_unlockAccount",
+                params: [result.result, req.body.password, 0],
+                jsonrpc: "2.0",
+                id: new Date().getTime()
+            }, function(error) {
+                if(!error) {
+                    db.collection("bcAccounts").insertOne({
+                        "instanceId": instanceId,
+                        "address": result.result,
+                        "password": req.body.password,
+                        "name": req.body.name || ""
+                    }, (err) => {
+                        if(!err) {
+                            res.send({})
+                        } else {
+                            res.send({"error": "An unknown error occured"})
+                        }
+                    })
+                } else {
+                    res.send({"error": "An unknown error occured"})
+                }
+            })
+        }
+    })
+})
+
+
+
 app.get(`/api/node/${instanceId}/utility/nodeInfo`, (req, res) => {
     var genesis = fs.readFileSync('/dynamo/node/genesis.json', 'utf8');
     var nodekey = fs.readFileSync('/dynamo/node/geth/nodekey', 'utf8');
     var constellationPublicKey = fs.readFileSync('/dynamo/cnode/node.pub', 'utf8');
-    res.send(JSON.stringify({
+    res.send({
         "genesis": genesis,
         "nodekey": nodekey,
         "constellationPublicKey": constellationPublicKey,
-    }))
+    })
 })
 
 app.get(`/api/node/${instanceId}/utility/size`, async (req, res) => {
     var gethSize = await getDirSize("/dynamo/node");
     var constellationSize = await getDirSize("/dynamo/cnode");
-    res.send(JSON.stringify({
+    res.send({
         "gethSize": gethSize,
         "constellationSize": constellationSize
-    }))
+    })
 })
 
 app.get(`/api/node/${instanceId}/utility/getPrivateKey`, (req, res) => {
@@ -891,11 +1034,11 @@ app.get(`/api/node/${instanceId}/utility/getPrivateKey`, (req, res) => {
     var keyObject = keythereum.importFromFile(address, datadir);
     var privateKey = keythereum.recover(password, keyObject);
 
-    res.send(JSON.stringify({
+    res.send({
         "keyFile": keyObject,
         "privateKeyString": privateKey.toString("hex"),
         "password": password
-    }))
+    })
 })
 
 

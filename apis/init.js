@@ -72,7 +72,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                             try {
                                 await upsertAccounts({
                                     instanceId: instanceId,
-                                    address: result.result
+                                    address: result.result,
+                                    name: "Default"
                                 }, {
                                     password: firstAccPass
                                 })

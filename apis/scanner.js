@@ -51,16 +51,19 @@ Array.prototype.remByVal = function(val) {
 
 function parseAndConvertData(data) {
     try {
-        data = JSON.parse(data)
-        return data;
+        var temp = JSON.parse(data)
+        return temp;
     } catch(e) {}
 
     try {
-        var data = new BigNumber(data)
-        return data.toNumber()
-    } catch(e) {}
+        var temp = new BigNumber(data)
 
-    return data;
+        if(temp.isNaN() === true) {
+            return data;
+        } else {
+            return temp.toNumber()
+        }
+    } catch(e) {}
 }
 
 let smartContracts = require("/dynamo/smart-contracts/index.js");
@@ -82,7 +85,6 @@ async function notifyClient(data) {
                 method: "POST",
                 json: data
             }, (error, result, body) => {
-                console.log(error, result, body)
                 resolve()
             })
         } catch(e) {
@@ -527,7 +529,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                                 await upsertSoloAsset({
                                     instanceId: instanceId,
                                     assetName: events[count].args.assetName,
-    								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+    								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueIdentifier)
                                 }, {
 									status: "closed"
 								})
