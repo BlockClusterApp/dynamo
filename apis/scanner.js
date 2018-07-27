@@ -999,10 +999,12 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 	});
 }
 
-async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress) {
+async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress) {
 	return new Promise((resolve, reject) => {
 		var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
 		var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
+        var assetsContract = web3.eth.contract(assetsContractABI);
+        var assets = assetsContract.at(assetsContractAddress)
 		var events = atomicSwap.allEvents({fromBlock: blockNumber, toBlock: blockNumber});
 		events.get(async function(error, events){
 			if(error) {
@@ -1015,7 +1017,7 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
                             let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
                             let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
                             let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
-
+                            let lockPeriod = atomicSwap.atomicSwapLockPeriod.call(events[count].args.hash);
                             try {
                                 await upsertOrder({
                                     instanceId: instanceId,
@@ -1026,13 +1028,15 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
                                     fromAssetType: atomicSwapDetails[2],
                                     fromAssetName: atomicSwapDetails[3],
                                     fromAssetUnits: atomicSwapDetails[4].toString(),
-                                    fromAssetId: atomicSwapDetails[5],
-                                    fromLockPeriod: atomicSwapDetails[6].toString(),
+                                    fromAssetParts: atomicSwapDetails[5].toString(),
+                                    fromAssetId: atomicSwapDetails[6],
+                                    fromLockPeriod: lockPeriod.toString(),
                                     toAssetType: atomicSwapOtherChainDetails[0],
                                     toAssetName: atomicSwapOtherChainDetails[1],
                                     toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
-                                    toAssetId: atomicSwapOtherChainDetails[3],
-                                    toGenesisBlockHash: atomicSwapOtherChainDetails[4],
+                                    toAssetParts: atomicSwapOtherChainDetails[3].toString(),
+                                    toAssetId: atomicSwapOtherChainDetails[4],
+                                    toGenesisBlockHash: atomicSwapOtherChainDetails[5],
                                     status: atomicSwapStatus.toString(),
                                     secret: atomicSwapSecret
                                 })
@@ -1045,13 +1049,15 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
                                     fromAssetType: atomicSwapDetails[2],
                                     fromAssetName: atomicSwapDetails[3],
                                     fromAssetUnits: atomicSwapDetails[4].toString(),
-                                    fromAssetId: atomicSwapDetails[5],
-                                    fromLockPeriod: atomicSwapDetails[6].toString(),
+                                    fromAssetParts: atomicSwapDetails[5].toString(),
+                                    fromAssetId: atomicSwapDetails[6],
+                                    fromLockPeriod: lockPeriod.toString(),
                                     toAssetType: atomicSwapOtherChainDetails[0],
                                     toAssetName: atomicSwapOtherChainDetails[1],
                                     toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
-                                    toAssetId: atomicSwapOtherChainDetails[3],
-                                    toGenesisBlockHash: atomicSwapOtherChainDetails[4],
+                                    toAssetParts: atomicSwapOtherChainDetails[3].toString(),
+                                    toAssetId: atomicSwapOtherChainDetails[4],
+                                    toGenesisBlockHash: atomicSwapOtherChainDetails[5],
                                     status: atomicSwapStatus.toString(),
                                     secret: atomicSwapSecret,
                                     eventHash: sha256(JSON.stringify(events[count])),

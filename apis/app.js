@@ -536,6 +536,39 @@ app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
                         "hash": hash,
                     }, (err) => {
                         if(!err) {
+                            var from_asset_parts = 0;
+                            var to_asset_parts = 0;
+                            if(req.body.fromAssetUnits) {
+                                from_asset_parts = assets.getBulkAssetParts.call(req.body.fromAssetName)
+                                req.body.fromAssetUnits = (new BigNumber(req.body.fromAssetUnits)).multipliedBy(addZeros(1, from_asset_parts)).toString()
+                            }
+
+                            if(req.body.toAssetUnits) {
+                                let _web3 = new Web3(new Web3.providers.HttpProvider(`http://${node.workerNodeIP}:${node.rpcNodePort}`));
+                                var _atomicSwapContract = _web3.eth.contract(smartContracts.atomicSwap.abi);
+                                var _atomicSwap = atomicSwapContract.at(node.atomicSwapContractAddress);
+                                var _assetsContract = _web3.eth.contract(smartContracts.assets.abi);
+                                var _assets = assetsContract.at(node.assetsContractAddress);
+
+                                to_asset_parts = _assets.getBulkAssetParts.call(req.body.toAssetName)
+                                req.body.toAssetUnits = (new BigNumber(req.body.toAssetUnits)).multipliedBy(addZeros(1, to_asset_parts)).toString()
+                            }
+
+                            console.log(req.body.toAddress,
+                            hash,
+                            req.body.fromAssetLockMinutes,
+                            req.body.fromAssetType,
+                            req.body.fromAssetName,
+                            req.body.fromAssetUniqueIdentifier,
+                            req.body.fromAssetUnits,
+                            from_asset_parts.toString(),
+                            req.body.toAssetType,
+                            req.body.toAssetName,
+                            req.body.toAssetUnits,
+                            to_asset_parts.toString(),
+                            req.body.toAssetUniqueIdentifier,
+                            toGenesisBlockHash)
+
                             assets.approve.sendTransaction(
                                 req.body.fromAssetType,
                                 req.body.fromAssetName,
@@ -554,9 +587,11 @@ app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
                                             req.body.fromAssetName,
                                             req.body.fromAssetUniqueIdentifier,
                                             req.body.fromAssetUnits,
+                                            from_asset_parts.toString(),
                                             req.body.toAssetType,
                                             req.body.toAssetName,
                                             req.body.toAssetUnits,
+                                            to_asset_parts.toString(),
                                             req.body.toAssetUniqueIdentifier,
                                             toGenesisBlockHash, {
                                                 from: req.body.fromAddress,
