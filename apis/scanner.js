@@ -26,6 +26,15 @@ process.on('uncaughtException', function (error) {
    console.log(error);
 });
 
+function addZeros(s, n) {
+    s = s.toString();
+    for(let count = 0; count < n; count++) {
+        s = s + "0";
+    }
+
+    return s;
+}
+
 // Hex to Base64
 function hexToBase64(str) {
     return btoa(String.fromCharCode.apply(null,
@@ -946,11 +955,13 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 units: events[count].args.units.toNumber()
                             })
 
+                            var parts = assets.getBulkAssetParts.call(events[count].args.assetName)
+
                             await notifyClient({
                                 instanceId: instanceId,
                                 type: "bulk",
                                 assetName: events[count].args.assetName,
-                                units: events[count].args.units.toNumber(),
+                                units: (new BigNumber(events[count].args.units.toNumber())).dividedBy(addZeros(1, parts)).toFixed(parseInt(parts)).toString(),
                                 eventHash: sha256(JSON.stringify(events[count])),
                                 eventName: "bulkAssetsIssued",
                                 transactionHash: events[count].transactionHash,
@@ -973,7 +984,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 assetName: events[count].args.assetName,
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
                                 admin: events[count].args.authorizedIssuer,
-                                units: 0,
                                 eventHash: sha256(JSON.stringify(events[count])),
                                 eventName: "soloAssetTypeCreated",
                                 transactionHash: events[count].transactionHash,
@@ -1048,14 +1058,12 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
                                     toAddress: atomicSwapDetails[1],
                                     fromAssetType: atomicSwapDetails[2],
                                     fromAssetName: atomicSwapDetails[3],
-                                    fromAssetUnits: atomicSwapDetails[4].toString(),
-                                    fromAssetParts: atomicSwapDetails[5].toString(),
+                                    fromAssetUnits: (new BigNumber(atomicSwapDetails[4].toString())).dividedBy(addZeros(1,  atomicSwapDetails[5].toString())).toFixed(parseInt( atomicSwapDetails[5].toString())).toString(),
                                     fromAssetId: atomicSwapDetails[6],
                                     fromLockPeriod: lockPeriod.toString(),
                                     toAssetType: atomicSwapOtherChainDetails[0],
                                     toAssetName: atomicSwapOtherChainDetails[1],
-                                    toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
-                                    toAssetParts: atomicSwapOtherChainDetails[3].toString(),
+                                    toAssetUnits: (new BigNumber(atomicSwapOtherChainDetails[2].toString())).dividedBy(addZeros(1, atomicSwapOtherChainDetails[3].toString())).toFixed(parseInt(atomicSwapOtherChainDetails[3].toString())).toString(),
                                     toAssetId: atomicSwapOtherChainDetails[4],
                                     toGenesisBlockHash: atomicSwapOtherChainDetails[5],
                                     status: atomicSwapStatus.toString(),
