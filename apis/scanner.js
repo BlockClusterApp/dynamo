@@ -22,6 +22,10 @@ var callbackURL = null;
 
 app.listen(5742)
 
+process.on('uncaughtException', function (error) {
+   console.log(error);
+});
+
 // Hex to Base64
 function hexToBase64(str) {
     return btoa(String.fromCharCode.apply(null,
@@ -75,11 +79,6 @@ var streamsContractABI = smartContracts.streams.abi;
 async function notifyClient(data) {
     return new Promise((resolve, reject) => {
         try {
-            console.log({
-                url: callbackURL,
-                method: "POST",
-                json: data
-            });
             request({
                 url: callbackURL,
                 method: "POST",

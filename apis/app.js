@@ -27,6 +27,10 @@ let instanceId = process.env.instanceId;
 let db = null;
 let network = null;
 
+process.on('uncaughtException', function (error) {
+   console.log(error);
+});
+
 function generateSecret() {
     var ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
     var ID_LENGTH = 8;
