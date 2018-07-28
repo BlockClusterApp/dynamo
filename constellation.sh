@@ -2,13 +2,13 @@ if [ $# -eq 0 ]
 then
 if [ -d "cnode" ];
 then
-./constellation-node cnode/constellation.conf
+constellation-node cnode/constellation.conf
 fi
 
 if [ ! -d "cnode" ];
 then
 mkdir cnode
-printf '\n' | ./constellation-node --generatekeys=node
+printf '\n' | constellation-node --generatekeys=node
 mv node.key ./cnode
 mv node.pub ./cnode/
 cat <<EOF >./cnode/constellation.conf
@@ -22,7 +22,7 @@ privatekeys = ["./cnode/node.key"]
 tls = "off"
 EOF
 sleep 5
-./constellation-node cnode/constellation.conf
+constellation-node cnode/constellation.conf
 fi
 fi
 
@@ -30,13 +30,13 @@ if [ $# -eq 1 ]
 then
 if [ -d "cnode" ];
 then
-./constellation-node cnode/constellation.conf
+constellation-node cnode/constellation.conf
 fi
 
 if [ ! -d "cnode" ];
 then
 mkdir cnode
-printf '\n' | ./constellation-node --generatekeys=node
+printf '\n' | constellation-node --generatekeys=node
 mv node.key ./cnode
 mv node.pub ./cnode/
 cat <<EOF >./cnode/constellation.conf
@@ -50,6 +50,6 @@ privatekeys = ["./cnode/node.key"]
 tls = "off"
 EOF
 sleep 5
-./constellation-node cnode/constellation.conf
+constellation-node cnode/constellation.conf
 fi
 fi
