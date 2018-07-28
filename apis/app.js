@@ -824,6 +824,40 @@ app.post(`/api/node/${instanceId}/assets/createStream`, (req, res) => {
     })
 })
 
+app.post(`/api/node/${instanceId}/streams/grantAccessToPublish`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+    var streams = streamsContract.at(network.streamsContractAddress);
+
+    streams.addPublisher.sendTransaction(req.body.streamName, req.body.publisher, {
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
+    }, function(error, txnHash) {
+        if (!error) {
+            res.send({"txhash": txnHash})
+        } else {
+            res.send({"error": "An unknown error occured"})
+        }
+    })
+})
+
+app.post(`/api/node/${instanceId}/streams/revokeAccessToPublish`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+    var streams = streamsContract.at(network.streamsContractAddress);
+
+    streams.removePublisher.sendTransaction(req.body.streamName, req.body.publisher, {
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
+    }, function(error, txnHash) {
+        if (!error) {
+            res.send({"txhash": txnHash})
+        } else {
+            res.send({"error": "An unknown error occured"})
+        }
+    })
+})
+
 app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var streamsContract = web3.eth.contract(smartContracts.streams.abi);
