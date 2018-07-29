@@ -1347,7 +1347,7 @@ async function unlockAccounts(web3, db) {
 
 async function getSize() {
     return new Promise((resolve, reject) => {
-        request(`http://127.0.0.1:6382/api/node/${process.env.instanceId}/utility/size`, { json: false }, (err, res, body) => {
+        request(`http://127.0.0.1:6382/utility/size`, { json: false }, (err, res, body) => {
             if (err) { reject(err) }
             else {
                 resolve({gethSize: JSON.parse(body).gethSize, constellationSize: JSON.parse(body).constellationSize})

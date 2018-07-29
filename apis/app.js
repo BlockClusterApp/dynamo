@@ -22,7 +22,6 @@ var base64 = require('base-64');
 var request = require("request")
 var btoa = require('btoa');
 var atob = require('atob');
-var morgan = require('morgan')
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -90,8 +89,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         fetchNode();
     }
 })
-
-app.use(morgan('combined'))
 
 app.use(bodyParser.json())
 
