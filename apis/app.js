@@ -92,7 +92,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
 app.use(bodyParser.json())
 
-app.post(`/api/node/${instanceId}/assets/createAssetType`, (req, res) => {
+app.post(`/assets/createAssetType`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
@@ -127,7 +127,7 @@ app.post(`/api/node/${instanceId}/assets/createAssetType`, (req, res) => {
     }
 })
 
-app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
+app.post(`/assets/issueSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
@@ -174,7 +174,7 @@ app.post(`/api/node/${instanceId}/assets/issueSoloAsset`, (req, res) => {
 })
 
 
-app.post(`/api/node/${instanceId}/assets/issueBulkAsset`, (req, res) => {
+app.post(`/assets/issueBulkAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
@@ -192,7 +192,7 @@ app.post(`/api/node/${instanceId}/assets/issueBulkAsset`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/transferSoloAsset`, (req, res) => {
+app.post(`/assets/transferSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
@@ -208,7 +208,7 @@ app.post(`/api/node/${instanceId}/assets/transferSoloAsset`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/transferBulkAsset`, (req, res) => {
+app.post(`/assets/transferBulkAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -244,7 +244,7 @@ function parseAndConvertData(data) {
     } catch(e) {}
 }
 
-app.post(`/api/node/${instanceId}/assets/getSoloAssetInfo`, (req, res) => {
+app.post(`/assets/getSoloAssetInfo`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     try {
@@ -267,7 +267,7 @@ app.post(`/api/node/${instanceId}/assets/getSoloAssetInfo`, (req, res) => {
     }
 })
 
-app.post(`/api/node/${instanceId}/assets/getBulkAssetBalance`, (req, res) => {
+app.post(`/assets/getBulkAssetBalance`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -283,7 +283,7 @@ app.post(`/api/node/${instanceId}/assets/getBulkAssetBalance`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
+app.post(`/assets/updateAssetInfo`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -377,7 +377,7 @@ app.post(`/api/node/${instanceId}/assets/updateAssetInfo`, (req, res) => {
     }
 })
 
-app.post(`/api/node/${instanceId}/assets/grantAccessToPrivateData`, (req, res) => {
+app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -443,7 +443,7 @@ app.post(`/api/node/${instanceId}/assets/grantAccessToPrivateData`, (req, res) =
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/revokeAccessToPrivateData`, (req, res) => {
+app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -498,7 +498,7 @@ app.post(`/api/node/${instanceId}/assets/revokeAccessToPrivateData`, (req, res) 
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/closeAsset`, (req, res) => {
+app.post(`/assets/closeAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -516,7 +516,7 @@ app.post(`/api/node/${instanceId}/assets/closeAsset`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
+app.post(`/assets/placeOrder`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
@@ -623,7 +623,7 @@ app.post(`/api/node/${instanceId}/assets/placeOrder`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/fulfillOrder`, (req, res) => {
+app.post(`/assets/fulfillOrder`, (req, res) => {
     db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
@@ -742,7 +742,7 @@ app.post(`/api/node/${instanceId}/assets/fulfillOrder`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/cancelOrder`, (req, res) => {
+app.post(`/assets/cancelOrder`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
@@ -771,7 +771,7 @@ app.post(`/api/node/${instanceId}/assets/cancelOrder`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/assets/getOrderInfo`, (req, res) => {
+app.post(`/assets/getOrderInfo`, (req, res) => {
     let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch();
 
     if(order[0]) {
@@ -781,7 +781,7 @@ app.post(`/api/node/${instanceId}/assets/getOrderInfo`, (req, res) => {
     }
 })
 
-app.post(`/api/node/${instanceId}/assets/search`, (req, res) => {
+app.post(`/assets/search`, (req, res) => {
     var query = req.body;
     query.instanceId = instanceId;
 
@@ -794,7 +794,7 @@ app.post(`/api/node/${instanceId}/assets/search`, (req, res) => {
     });
 })
 
-app.post(`/api/node/${instanceId}/streams/search`, (req, res) => {
+app.post(`/streams/search`, (req, res) => {
     var query = req.body;
     query.instanceId = instanceId;
 
@@ -807,7 +807,7 @@ app.post(`/api/node/${instanceId}/streams/search`, (req, res) => {
     });
 })
 
-app.post(`/api/node/${instanceId}/assets/createStream`, (req, res) => {
+app.post(`/assets/createStream`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var streamsContract = web3.eth.contract(smartContracts.streams.abi);
     var streams = streamsContract.at(network.streamsContractAddress);
@@ -824,7 +824,41 @@ app.post(`/api/node/${instanceId}/assets/createStream`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/streams/publish`, (req, res) => {
+app.post(`/streams/grantAccessToPublish`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+    var streams = streamsContract.at(network.streamsContractAddress);
+
+    streams.addPublisher.sendTransaction(req.body.streamName, req.body.publisher, {
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
+    }, function(error, txnHash) {
+        if (!error) {
+            res.send({"txhash": txnHash})
+        } else {
+            res.send({"error": "An unknown error occured"})
+        }
+    })
+})
+
+app.post(`/streams/revokeAccessToPublish`, (req, res) => {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+    var streams = streamsContract.at(network.streamsContractAddress);
+
+    streams.removePublisher.sendTransaction(req.body.streamName, req.body.publisher, {
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
+    }, function(error, txnHash) {
+        if (!error) {
+            res.send({"txhash": txnHash})
+        } else {
+            res.send({"error": "An unknown error occured"})
+        }
+    })
+})
+
+app.post(`/streams/publish`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var streamsContract = web3.eth.contract(smartContracts.streams.abi);
     var streams = streamsContract.at(network.streamsContractAddress);
@@ -972,7 +1006,7 @@ async function getDirSize(myFolder) {
     })
 }
 
-app.post(`/api/node/${instanceId}/utility/vote`, (req, res) => {
+app.post(`/utility/vote`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     web3.currentProvider.sendAsync({
         method: "istanbul_propose",
@@ -988,7 +1022,7 @@ app.post(`/api/node/${instanceId}/utility/vote`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/utility/unVote`, (req, res) => {
+app.post(`/utility/unVote`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     web3.currentProvider.sendAsync({
         method: "istanbul_propose",
@@ -1004,7 +1038,7 @@ app.post(`/api/node/${instanceId}/utility/unVote`, (req, res) => {
     })
 })
 
-app.post(`/api/node/${instanceId}/utility/createAccount`, (req, res) => {
+app.post(`/utility/createAccount`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     web3.currentProvider.sendAsync({
         method: "personal_newAccount",
@@ -1044,7 +1078,7 @@ app.post(`/api/node/${instanceId}/utility/createAccount`, (req, res) => {
 
 
 
-app.get(`/api/node/${instanceId}/utility/nodeInfo`, (req, res) => {
+app.get(`/utility/nodeInfo`, (req, res) => {
     var genesis = fs.readFileSync('/dynamo/node/genesis.json', 'utf8');
     var nodekey = fs.readFileSync('/dynamo/node/geth/nodekey', 'utf8');
     var constellationPublicKey = fs.readFileSync('/dynamo/cnode/node.pub', 'utf8');
@@ -1055,7 +1089,7 @@ app.get(`/api/node/${instanceId}/utility/nodeInfo`, (req, res) => {
     })
 })
 
-app.get(`/api/node/${instanceId}/utility/size`, async (req, res) => {
+app.get(`/utility/size`, async (req, res) => {
     var gethSize = await getDirSize("/dynamo/node");
     var constellationSize = await getDirSize("/dynamo/cnode");
     res.send({
@@ -1064,7 +1098,7 @@ app.get(`/api/node/${instanceId}/utility/size`, async (req, res) => {
     })
 })
 
-app.get(`/api/node/${instanceId}/utility/getPrivateKey`, (req, res) => {
+app.get(`/utility/getPrivateKey`, (req, res) => {
     var datadir = "/dynamo/node";
     var url_parts = url.parse(req.url, true);
     var address= req.query.address;

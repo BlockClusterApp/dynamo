@@ -23,18 +23,16 @@ RUN git clone https://github.com/nucypher/pyUmbral.git
 ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
 RUN cd pyUmbral && pipenv install --system --deploy --ignore-pipfile && python3 setup.py install
 
+COPY install.sh .
 COPY constellation.sh .
 COPY quorum-node.sh .
 COPY setup.sh .
-COPY Ubuntu/istanbul .
-COPY Ubuntu/geth .
-COPY Ubuntu/constellation-node .
 RUN chmod 755 constellation.sh
 RUN chmod 755 quorum-node.sh
 RUN chmod 755 setup.sh
-RUN chmod 755 istanbul
-RUN chmod 755 geth
-RUN chmod 755 constellation-node
+RUN chmod 755 install.sh
+
+RUN ./install.sh
 
 RUN mkdir ./smart-contracts
 ADD smart-contracts ./smart-contracts
