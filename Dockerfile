@@ -41,3 +41,4 @@ ADD apis/package.json ./apis/package.json
 RUN cd apis && npm install
 ADD apis ./apis
 RUN cd apis && npm install
+RUN mkdir bcData

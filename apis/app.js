@@ -1079,9 +1079,9 @@ app.post(`/utility/createAccount`, (req, res) => {
 
 
 app.get(`/utility/nodeInfo`, (req, res) => {
-    var genesis = fs.readFileSync('/dynamo/node/genesis.json', 'utf8');
-    var nodekey = fs.readFileSync('/dynamo/node/geth/nodekey', 'utf8');
-    var constellationPublicKey = fs.readFileSync('/dynamo/cnode/node.pub', 'utf8');
+    var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
+    var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
+    var constellationPublicKey = fs.readFileSync('/dynamo/bcData/cnode/node.pub', 'utf8');
     res.send({
         "genesis": genesis,
         "nodekey": nodekey,
@@ -1090,8 +1090,8 @@ app.get(`/utility/nodeInfo`, (req, res) => {
 })
 
 app.get(`/utility/size`, async (req, res) => {
-    var gethSize = await getDirSize("/dynamo/node");
-    var constellationSize = await getDirSize("/dynamo/cnode");
+    var gethSize = await getDirSize("/dynamo/bcData/node");
+    var constellationSize = await getDirSize("/dynamo/bcData/cnode");
     res.send({
         "gethSize": gethSize,
         "constellationSize": constellationSize
@@ -1099,7 +1099,7 @@ app.get(`/utility/size`, async (req, res) => {
 })
 
 app.get(`/utility/getPrivateKey`, (req, res) => {
-    var datadir = "/dynamo/node";
+    var datadir = "/dynamo/bcData/node";
     var url_parts = url.parse(req.url, true);
     var address= req.query.address;
     const password = req.query.password;
