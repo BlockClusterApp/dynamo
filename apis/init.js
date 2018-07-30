@@ -86,9 +86,9 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 }, (error) => {
                                     if(!error) {
 
-                                        var genesis = fs.readFileSync('/dynamo/node/genesis.json', 'utf8');
-                                        var nodekey = fs.readFileSync('/dynamo/node/geth/nodekey', 'utf8');
-                                        var constellationPublicKey = fs.readFileSync('/dynamo/cnode/node.pub', 'utf8');
+                                        var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
+                                        var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
+                                        var constellationPublicKey = fs.readFileSync('/dynamo/bcData/cnode/node.pub', 'utf8');
 
                                         web3.currentProvider.sendAsync({
                                             method: "admin_nodeInfo",
