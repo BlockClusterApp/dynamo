@@ -1175,6 +1175,8 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
 })
 
 async function sendRawTxn(data) {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+
     return new Promise((resolve, reject) => {
         console.log(data)
         web3.eth.sendRawTransaction("0x" + data.serialize().toString("hex"), function(err, hash) {
