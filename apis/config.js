@@ -5,5 +5,16 @@ module.exports = {
     },
     getImpulseURL() {
         return process.env.IMPULSE_URL || "http://localhost:7558"
+    },
+    getDatabase() {
+        const a  = process.env.MONGO_URL;
+        if(!a){
+            return "admin";
+        }
+        const db = a.substring(a.lastIndexOf("/")+1, a.lastIndexOf("?replica"));
+        if(!db){
+            return "admin";
+        }
+        return db;
     }
 }

@@ -4,7 +4,7 @@ let instanceId = process.env.instanceId;
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true, useNewUrlParser: true}, function(err, database) {
     if(!err) {
-        let db = database.db("admin");
+        let db = database.db(Config.getDatabase());
         db.collection("networks").updateOne({instanceId: instanceId}, { $set: {status: "down"}}, function(err, res) {
             process.exit(0);
         });
