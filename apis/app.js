@@ -1192,7 +1192,7 @@ app.post(`/utility/signAndSendTxns`, (req, res) => {
 
     let result = [];
 
-    for(let count = 0; count < req.body.txns; count++) {
+    for(let count = 0; count < req.body.txns.length; count++) {
         let tx = new EthereumTx(req.body.txns[count].raw);
         console.log(tx)
         let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
