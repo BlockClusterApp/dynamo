@@ -22,6 +22,8 @@ var base64 = require('base-64');
 var request = require("request")
 var btoa = require('btoa');
 var atob = require('atob');
+const EthereumTx = require('ethereumjs-tx')
+const EthereumUtil = require('ethereumjs-util')
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -133,7 +135,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                 if (!error) {
                     res.send({"txnHash": txnHash})
                 } else {
-                    res.send({"error": err.toString()})
+                    res.send({"error": error.toString()})
                 }
             })
         }
@@ -166,7 +168,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                     if (!error) {
                         res.send({"txnHash": txnHash})
                     } else {
-                        res.send({"error": err.toString()})
+                        res.send({"error": error.toString()})
                     }
                 })
             }
@@ -822,11 +824,11 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
     db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             if(order.fromAssetType === "bulk") {
-                order.fromAssetUnits = (new BigNumber(order.fromAssetUnits.toNumber())).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
+                order.fromAssetUnits = (new BigNumber(order.fromAssetUnits)).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
             }
 
             if(order.toAssetType === "bulk") {
-                order.toAssetUnits = (new BigNumber(order.toAssetUnits.toNumber())).dividedBy(addZeros(1, order.toAssetParts)).toFixed(parseInt(order.toAssetParts)).toString()
+                order.toAssetUnits = (new BigNumber(order.toAssetUnits)).dividedBy(addZeros(1, order.toAssetParts)).toFixed(parseInt(order.toAssetParts)).toString()
             }
 
             delete order.toAssetParts;
@@ -1172,5 +1174,42 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     })
 })
 
+async function sendRawTxn(data) {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+
+    return new Promise((resolve, reject) => {
+        web3.eth.sendRawTransaction(data, function(err, hash) {
+            if(err) {
+                reject({"error": "An error occured"})
+            } else {
+                resolve({"txnHash": hash})
+            }
+        })
+    })
+}
+
+app.post(`/utility/signAndSendTxns`, (req, res) => {
+
+    let result = [];
+
+    for(let count = 0; count < req.body.txns.length; count++) {
+        let tx = new EthereumTx(req.body.txns[count].raw);
+        let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
+        result.push(await sendRawTxn("0x" + tx.sign(privateKey).serialize().toString("hex")))
+    }
+
+    res.send(result)
+})
+
+app.post(`/utility/sendRawTxns`, (req, res) => {
+
+    let result = [];
+
+    for(let count = 0; count < req.body.txns.length; count++) {
+        result.push(await sendRawTxn(req.body.txns[count]))
+    }
+
+    res.send(result)
+})
 
 app.listen(6382)
