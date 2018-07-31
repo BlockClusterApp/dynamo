@@ -22,6 +22,8 @@ var base64 = require('base-64');
 var request = require("request")
 var btoa = require('btoa');
 var atob = require('atob');
+const EthereumTx = require('ethereumjs-tx')
+const EthereumUtil = require('ethereumjs-util')
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -133,7 +135,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                 if (!error) {
                     res.send({"txnHash": txnHash})
                 } else {
-                    res.send({"error": err.toString()})
+                    res.send({"error": error.toString()})
                 }
             })
         }
@@ -166,7 +168,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                     if (!error) {
                         res.send({"txnHash": txnHash})
                     } else {
-                        res.send({"error": err.toString()})
+                        res.send({"error": error.toString()})
                     }
                 })
             }
@@ -1172,5 +1174,30 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     })
 })
 
+async function sendRawTxn(data) {
+    return new Promise((resolve, reject) => {
+        web3.eth.sendRawTransaction("0x" + data.serialize().toString("hex"), function(err, hash) {
+            if(err) {
+                console.log(err);
+                reject({"error": "An error occured"})
+            } else {
+                resolve({"txnHash": hash})
+            }
+        })
+    })
+}
+
+app.post(`/utility/signAndSendTxns`, (req, res) => {
+
+    let result = [];
+
+    for(let count = 0; count < req.body.txns; count++) {
+        let tx = new EthereumTx(eq.body.txns[body].raw);
+        let privateKey = EthereumUtil.toBuffer(eq.body.txns[body].privateKey, "hex");
+        result.push(sendRawTxn(tx.sign(privateKey)))
+    }
+
+    res.send(result)
+})
 
 app.listen(6382)
