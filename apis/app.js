@@ -774,11 +774,24 @@ app.post(`/assets/cancelOrder`, (req, res) => {
 app.post(`/assets/getOrderInfo`, (req, res) => {
     let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch();
 
-    if(order[0]) {
-        res.send(order[0])
-    } else {
-        res.send({"error": "Order not found"})
-    }
+    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+        if(!err && order) {
+            if(order.fromAssetType === "bulk") {
+                order.fromAssetUnits = (new BigNumber(order.fromAssetUnits.toNumber())).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
+            }
+
+            if(order.toAssetType === "bulk") {
+                order.toAssetUnits = (new BigNumber(order.toAssetUnits.toNumber())).dividedBy(addZeros(1, order.toAssetParts)).toFixed(parseInt(order.toAssetParts)).toString()
+            }
+
+            delete order.toAssetParts;
+            delete order.fromAssetParts;
+
+            res.send(order)
+        } else {
+            res.send({"error": "Order not found"})
+        }
+    })
 })
 
 app.post(`/assets/search`, (req, res) => {
