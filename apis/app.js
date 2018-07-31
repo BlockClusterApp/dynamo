@@ -1098,11 +1098,11 @@ app.get(`/utility/size`, async (req, res) => {
     })
 })
 
-app.get(`/utility/getPrivateKey`, (req, res) => {
+app.post(`/utility/getPrivateKey`, (req, res) => {
     var datadir = "/dynamo/bcData/node";
     var url_parts = url.parse(req.url, true);
-    var address= req.query.address;
-    const password = req.query.password;
+    var address= req.body.address;
+    const password = req.body.password;
 
     var keyObject = keythereum.importFromFile(address, datadir);
     var privateKey = keythereum.recover(password, keyObject);
