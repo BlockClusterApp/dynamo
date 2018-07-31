@@ -1390,7 +1390,7 @@ async function addPeers(web3, peers) {
 //MongoClient.connect("mongodb://127.0.0.1:3001", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
-        db = database.db("admin");
+        db = database.db(Config.getDatabase());
         let accountsUnlocked = false;
         let instanceId = process.env.instanceId;
         let scan = async function() {
