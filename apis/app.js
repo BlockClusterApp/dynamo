@@ -1178,10 +1178,8 @@ async function sendRawTxn(data) {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     return new Promise((resolve, reject) => {
-        console.log(data)
-        web3.eth.sendRawTransaction("0x" + data.serialize().toString("hex"), function(err, hash) {
+        web3.eth.sendRawTransaction(data, function(err, hash) {
             if(err) {
-                console.log(err);
                 reject({"error": "An error occured"})
             } else {
                 resolve({"txnHash": hash})
@@ -1196,10 +1194,19 @@ app.post(`/utility/signAndSendTxns`, (req, res) => {
 
     for(let count = 0; count < req.body.txns.length; count++) {
         let tx = new EthereumTx(req.body.txns[count].raw);
-        console.log(tx)
         let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
-        console.log(privateKey)
-        result.push(await sendRawTxn(tx.sign(privateKey)))
+        result.push(await sendRawTxn("0x" + tx.sign(privateKey).serialize().toString("hex")))
+    }
+
+    res.send(result)
+})
+
+app.post(`/utility/sendRawTxns`, (req, res) => {
+
+    let result = [];
+
+    for(let count = 0; count < req.body.txns.length; count++) {
+        result.push(await sendRawTxn(req.body.txns[count]))
     }
 
     res.send(result)
