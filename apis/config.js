@@ -11,6 +11,10 @@ module.exports = {
         if(!a){
             return "admin";
         }
+
+        if(a.indexOf("?replica") === -1 ){
+            return "admin"
+        }
         const db = a.substring(a.lastIndexOf("/")+1, a.lastIndexOf("?replica"));
         if(!db){
             return "admin";
