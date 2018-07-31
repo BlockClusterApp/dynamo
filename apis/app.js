@@ -1197,7 +1197,7 @@ app.post(`/utility/signAndSendTxns`, (req, res) => {
         console.log(tx)
         let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
         console.log(privateKey)
-        result.push(sendRawTxn(tx.sign(privateKey)))
+        result.push(await sendRawTxn(tx.sign(privateKey)))
     }
 
     res.send(result)
