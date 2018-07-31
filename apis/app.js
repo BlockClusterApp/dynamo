@@ -92,27 +92,41 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
 app.use(bodyParser.json())
 
-app.post(`/assets/createAssetType`, (req, res) => {
+async function getNonce(address) {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+
+    return new Promise((resolve, reject) => {
+        web3.eth.getTransactionCount(address, function(error, nonce){
+            if(!error) {
+                resolve(nonce)
+            } else {
+                reject("An error occured")
+            }
+        })
+    })
+}
+
+app.post(`/assets/createAssetType`, async (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
 
     if (req.body.assetType === "solo") {
-        assets.createSoloAssetType.sendTransaction(req.body.assetName, {
-            from: req.body.assetIssuer,
-            gas: '99999999999999999'
-        }, function(error, txnHash) {
-            if (!error) {
-                res.send({"txnHash": txnHash})
-            } else {
-                res.send({"error": err.toString()})
-            }
-        })
-    } else {
-        if(req.body.parts > 18) {
-            res.send({"error": "Invalid parts"})
+
+        if(req.body.raw) {
+            var rawTx = {
+                 gasPrice: web3.toHex(0),
+                 gasLimit: web3.toHex(99999999999999999),
+                 from: req.body.assetIssuer,
+                 nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
+                 data: assets.createSoloAssetType.getData(req.body.assetName),
+                 to: network.assetsContractAddress,
+                 value: web3.toHex(0)
+            };
+
+            res.send([rawTx])
         } else {
-            assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, {
+            assets.createSoloAssetType.sendTransaction(req.body.assetName, {
                 from: req.body.assetIssuer,
                 gas: '99999999999999999'
             }, function(error, txnHash) {
@@ -124,6 +138,39 @@ app.post(`/assets/createAssetType`, (req, res) => {
             })
         }
 
+    } else {
+        if(req.body.raw) {
+            if(req.body.parts > 18) {
+                res.send({"error": "Invalid parts"})
+            } else {
+                var rawTx = {
+                     gasPrice: web3.toHex(0),
+                     gasLimit: web3.toHex(99999999999999999),
+                     from: req.body.assetIssuer,
+                     nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
+                     data: assets.createBulkAssetType.getData(req.body.assetName, (req.body.reissuable === "true"), req.body.parts),
+                     to: network.assetsContractAddress,
+                     value: web3.toHex(0)
+                };
+
+                res.send([rawTx])
+            }
+        } else {
+            if(req.body.parts > 18) {
+                res.send({"error": "Invalid parts"})
+            } else {
+                assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, {
+                    from: req.body.assetIssuer,
+                    gas: '99999999999999999'
+                }, function(error, txnHash) {
+                    if (!error) {
+                        res.send({"txnHash": txnHash})
+                    } else {
+                        res.send({"error": err.toString()})
+                    }
+                })
+            }
+        }
     }
 })
 
@@ -772,8 +819,6 @@ app.post(`/assets/cancelOrder`, (req, res) => {
 })
 
 app.post(`/assets/getOrderInfo`, (req, res) => {
-    let order = Orders.find({instanceId: instanceId, atomicSwapHash: req.body.orderId}).fetch();
-
     db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             if(order.fromAssetType === "bulk") {
