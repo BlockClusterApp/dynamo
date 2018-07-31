@@ -70,7 +70,7 @@ function base64ToHex(str) {
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
-        db = database.db("admin");
+        db = database.db(Config.getDatabase());
 
         let fetchNode = function() {
             db.collection("networks").findOne({instanceId: instanceId}, function(err, node) {

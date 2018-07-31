@@ -52,7 +52,7 @@ async function upsertNetwork(query, set) {
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
-        db = database.db("admin");
+        db = database.db(Config.getDatabase());
 
         //deploy contracts and create nodes
         let deployInitNode = function() {
