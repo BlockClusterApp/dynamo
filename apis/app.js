@@ -1176,6 +1176,7 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
 
 async function sendRawTxn(data) {
     return new Promise((resolve, reject) => {
+        console.log(data)
         web3.eth.sendRawTransaction("0x" + data.serialize().toString("hex"), function(err, hash) {
             if(err) {
                 console.log(err);
@@ -1192,8 +1193,10 @@ app.post(`/utility/signAndSendTxns`, (req, res) => {
     let result = [];
 
     for(let count = 0; count < req.body.txns; count++) {
-        let tx = new EthereumTx(eq.body.txns[body].raw);
-        let privateKey = EthereumUtil.toBuffer(eq.body.txns[body].privateKey, "hex");
+        let tx = new EthereumTx(req.body.txns[count].raw);
+        console.log(tx)
+        let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
+        console.log(privateKey)
         result.push(sendRawTxn(tx.sign(privateKey)))
     }
 
