@@ -1188,7 +1188,7 @@ async function sendRawTxn(data) {
     })
 }
 
-app.post(`/utility/signAndSendTxns`, (req, res) => {
+app.post(`/utility/signAndSendTxns`, async (req, res) => {
 
     let result = [];
 
@@ -1201,7 +1201,7 @@ app.post(`/utility/signAndSendTxns`, (req, res) => {
     res.send(result)
 })
 
-app.post(`/utility/sendRawTxns`, (req, res) => {
+app.post(`/utility/sendRawTxns`, async (req, res) => {
 
     let result = [];
 
