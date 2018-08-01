@@ -1221,7 +1221,7 @@ app.post(`/transactions/sendRaw`, async (req, res) => {
 
 async function clearFile(file) {
     return new Promise((resolve, reject) => {
-        fs.unlink(file, (err) => {
+        fs.writeFile(file, "[]", (err, data) => {
             if (err) {
                 reject(err)
             } else {
