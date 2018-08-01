@@ -4,7 +4,7 @@ then
 	screen -d -m ./constellation.sh
 	sleep 5
     echo "screen -d -m ./quorum-node.sh" > './apis/geth-command.txt'
-	screen -d -m ./quorum-node.sh
+	screen -L -d -m ./quorum-node.sh
 	screen -L -d -m node ./apis/app.js
 	sleep 10;
     screen -d -m node ./apis/init.js
@@ -61,7 +61,7 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
     echo "screen -d -m ./quorum-node.sh ".$2." ".$3 > './apis/geth-command.txt'
-	screen -d -m ./quorum-node.sh $2 $3
+	screen -L -d -m ./quorum-node.sh $2 $3
 	screen -L -d -m node ./apis/app.js
 	sleep 10;
     screen -d -m node ./apis/init.js
@@ -118,7 +118,7 @@ then
 	screen -d -m ./constellation.sh $1
 	sleep 5
     echo "screen -d -m ./quorum-node.sh ".$2." ".$3." ".$4 > './apis/geth-command.txt'
-	screen -d -m ./quorum-node.sh $2 $3 $4
+	screen -L -d -m ./quorum-node.sh $2 $3 $4
 	screen -L -d -m node ./apis/app.js
 	sleep 10;
     screen -d -m node ./apis/init.js

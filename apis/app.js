@@ -1298,8 +1298,8 @@ app.post(`/utility/whitelistNode`, async (req, res) => {
                 try {
                     await clearFile("/dynamo/bcData/node/permissioned-nodes.json")
                     await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
-                    await killGeth();
-                    await startGeth();
+                    //await killGeth();
+                    //await startGeth();
                     res.send({ "message": "Successfully whitelisted node"})
                 } catch(e) {
                     res.send({ "error": e})
