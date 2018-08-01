@@ -1274,10 +1274,9 @@ async function startGeth() {
 }
 
 app.post(`/utility/whitelistNode`, async (req, res) => {
-    let enode = req.body.nodeID;
-    let port = req.body.port;
+    //let finalURL = `enode://${enode}[::]:${port}`
 
-    let finalURL = `enode://${enode}[::]:${port}`
+    let url = req.body.url;
 
     db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
         if(!err) {
@@ -1288,10 +1287,10 @@ app.post(`/utility/whitelistNode`, async (req, res) => {
                 whitelistedNodes = []
             }
 
-            if(whitelistedNodes.includes(finalURL)) {
+            if(whitelistedNodes.includes(url)) {
                 res.send({"message": "Node ID already exists"})
             } else {
-                whitelistedNodes.push(finalURL)
+                whitelistedNodes.push(url)
 
                 //write to file
                 //kill process
