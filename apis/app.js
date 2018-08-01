@@ -1188,29 +1188,129 @@ async function sendRawTxn(data) {
     })
 }
 
-app.post(`/utility/signAndSendTxns`, async (req, res) => {
+app.post(`/transactions/signAndSend`, async (req, res) => {
 
     let result = [];
 
-    for(let count = 0; count < req.body.txns.length; count++) {
-        let tx = new EthereumTx(req.body.txns[count].raw);
-        let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
-        tx.sign(privateKey)
-        result.push(await sendRawTxn("0x" + tx.serialize().toString("hex")))
-    }
+    try {
+        for(let count = 0; count < req.body.txns.length; count++) {
+            let tx = new EthereumTx(req.body.txns[count].raw);
+            let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
+            tx.sign(privateKey)
+            result.push(await sendRawTxn("0x" + tx.serialize().toString("hex")))
+        }
 
-    res.send(result)
+        res.send(result)
+    } catch(e) {
+        res.send({ "error": e})
+    }
 })
 
-app.post(`/utility/sendRawTxns`, async (req, res) => {
-
+app.post(`/transactions/sendRaw`, async (req, res) => {
     let result = [];
 
-    for(let count = 0; count < req.body.txns.length; count++) {
-        result.push(await sendRawTxn(req.body.txns[count]))
+    try {
+        for(let count = 0; count < req.body.txns.length; count++) {
+            result.push(await sendRawTxn(req.body.txns[count]))
+        }
+        res.send(result)
+    } catch(e) {
+        res.send({ "error": e})
     }
-
-    res.send(result)
 })
+
+async function clearFile(file) {
+    return new Promise((resolve, reject) => {
+        fs.unlink(file, (err) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
+async function writeFile(file, content) {
+    return new Promise((resolve, reject) => {
+        fs.writeFile(file, content, (err, data) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
+async function killGeth() {
+    return new Promise((resolve, reject) => {
+        exec("pkill geth", (error, stdout, stderr) => {
+            if(!error) {
+                resolve()
+            } else {
+                reject(error)
+            }
+        })
+    })
+}
+
+async function startGeth() {
+    return new Promise((resolve, reject) => {
+        fs.readFile('/dynamo/apis/geth-command.txt', 'utf8', function(err, command) {
+            if(err) {
+                reject(err)
+            } else {
+                exec(command, (error, stdout, stderr) => {
+                    if(!error) {
+                        resolve()
+                    } else {
+                        reject(error)
+                    }
+                })
+            }
+        });
+    })
+}
+
+app.post(`/utility/whitelistNode`, async (req, res) => {
+    let enode = req.body.nodeID;
+    let port = req.body.port;
+
+    let finalURL = `enode://${enode}[::]:${port}`
+
+    db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
+        if(!err) {
+            let whitelistedNodes;
+            if(node.whitelistedNodes) {
+                whitelistedNodes = node.whitelistedNodes;
+            } else {
+                whitelistedNodes = []
+            }
+
+            if(whitelistedNodes.includes(finalURL)) {
+                res.send({"message": "Node ID already exists"})
+            } else {
+                whitelistedNodes.push(finalURL)
+
+                //write to file
+                //kill process
+                //start process
+                try {
+                    await clearFile("/dynamo/bcData/node/permissioned-nodes.json")
+                    await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
+                    await killGeth();
+                    await startGeth();
+                } catch(e) {
+                    res.send({ "error": e})
+                }
+
+            }
+        } else {
+            console.log(err)
+        }
+    })
+})
+
 
 app.listen(6382)
