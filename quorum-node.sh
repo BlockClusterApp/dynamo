@@ -50,13 +50,15 @@ cp ./bcData/node/nodekey ./bcData/node/geth/
 cat <<EOF >./bcData/node/static-nodes.json
 $1
 EOF
+cat <<EOF >./bcData/node/permissioned-nodes.json
+$1
+EOF
 rm -rf ./bcData/node/genesis.json
 cat <<EOF >./bcData/node/genesis.json
 $2
 EOF
 geth --datadir ./bcData/node init ./bcData/node/genesis.json
 rm ./bcData/node/nodekey
-echo '[]' >./bcData/node/permissioned-nodes.json
 PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned
 fi
 fi
@@ -83,6 +85,9 @@ mv ./0/nodekey ./
 cd ../..
 cp ./bcData/node/nodekey ./bcData/node/geth/
 cat <<EOF >./bcData/node/static-nodes.json
+$1
+EOF
+cat <<EOF >./bcData/node/permissioned-nodes.json
 $1
 EOF
 rm -rf ./bcData/node/genesis.json
