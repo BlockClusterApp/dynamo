@@ -1373,19 +1373,6 @@ async function getPeers(web3) {
     })
 }
 
-async function addPeers(web3, peers) {
-    return new Promise((resolve, reject) => {
-        for(var count = 0; count < accounts.length; count++) {
-            web3.currentProvider.sendAsync({
-                method: "admin_addPeer",
-                params: [peers[count]],
-                jsonrpc: "2.0",
-                id: new Date().getTime()
-            }, () => {})
-        }
-        resolve();
-    })
-}
 
 //MongoClient.connect("mongodb://127.0.0.1:3001", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
@@ -1431,10 +1418,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 }
 
                                 if(blockToScan % 5 == 0) {
-                                    if(node.staticPeers) {
-                                        await addPeers(web3, node.staticPeers)
-                                    }
-
                                     var peers = await getPeers(web3, node.accounts);
                                 }
 

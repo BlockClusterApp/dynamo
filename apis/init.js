@@ -89,6 +89,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                         var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
                                         var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
                                         var constellationPublicKey = fs.readFileSync('/dynamo/bcData/cnode/node.pub', 'utf8');
+                                        var staticNodes = fs.readFileSync('/dynamo/bcData/node/static-nodes.json', 'utf8');
+                                        var permissionedNodes = fs.readFileSync('/dynamo/bcData/node/permissioned-nodes.json', 'utf8');
 
                                         web3.currentProvider.sendAsync({
                                             method: "admin_nodeInfo",
@@ -139,7 +141,9 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                         "impulse": {
                                                                             privateKey: private_key_hex,
                                                                             publicKey: compressed_public_key_hex
-                                                                        }
+                                                                        },
+                                                                        "staticPeers": JSON.parse(staticNodes),
+                                                                        "whitelistedNodes": JSON.parse(permissionedNodes)
                                                                     })
                                                                 }
                                                             })
@@ -207,7 +211,9 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                             "impulse": {
                                                                                                                 privateKey: private_key_hex,
                                                                                                                 publicKey: compressed_public_key_hex
-                                                                                                            }
+                                                                                                            },
+                                                                                                            "staticPeers": JSON.parse(staticNodes),
+                                                                                                            "whitelistedNodes": JSON.parse(permissionedNodes)
                                                                                                         })
                                                                                                     }
                                                                                                 })

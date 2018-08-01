@@ -1273,7 +1273,41 @@ async function startGeth() {
     })
 }
 
-app.post(`/utility/whitelistNode`, async (req, res) => {
+async function updateNetwork(set) {
+    return new Promise((resolve, reject) => {
+        db.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
+            if(err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        });
+    })
+}
+
+
+
+async function adminAddPeer(url) {
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    return new Promise((resolve, reject) => {
+        web3.currentProvider.sendAsync({
+            method: "admin_addPeer",
+            params: [url],
+            jsonrpc: "2.0",
+            id: new Date().getTime()
+        }, (error) => {
+            if(error) {
+                reject(error)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
+
+//always keep static-nodes and permissioned-nodes sync with DB
+
+app.post(`/utility/whitelistPeer`, async (req, res) => {
     //let finalURL = `enode://${enode}[::]:${port}`
 
     let url = req.body.url;
@@ -1300,6 +1334,10 @@ app.post(`/utility/whitelistNode`, async (req, res) => {
                     await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
                     //await killGeth();
                     //await startGeth();
+                    await updateNetwork(instanceId, {
+                        whitelistedNodes: whitelistedNodes
+                    })
+
                     res.send({ "message": "Successfully whitelisted node"})
                 } catch(e) {
                     res.send({ "error": e})
@@ -1312,5 +1350,44 @@ app.post(`/utility/whitelistNode`, async (req, res) => {
     })
 })
 
+app.post(`/utility/addPeer`, async (req, res) => {
+    let url = req.body.url;
+
+    db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
+        if(!err) {
+            let staticPeers;
+            if(node.staticPeers) {
+                staticPeers = node.staticPeers;
+            } else {
+                staticPeers = []
+            }
+
+            if(staticPeers.includes(url)) {
+                res.send({"message": "Node URL already exists"})
+            } else {
+                staticPeers.push(url)
+
+                //write to file
+                //kill process
+                //start process
+                try {
+                    await clearFile("/dynamo/bcData/node/static-nodes.json")
+                    await writeFile("/dynamo/bcData/node/static-nodes.json", JSON.stringify(staticPeers))
+                    await adminAddPeer(url)
+                    await updateNetwork(instanceId, {
+                        staticPeers: staticPeers
+                    })
+
+                    res.send({ "message": "Successfully added node"})
+                } catch(e) {
+                    res.send({ "error": e})
+                }
+
+            }
+        } else {
+            console.log(err)
+        }
+    })
+})
 
 app.listen(6382)
