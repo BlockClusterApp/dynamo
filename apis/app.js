@@ -1243,36 +1243,6 @@ async function writeFile(file, content) {
     })
 }
 
-async function killGeth() {
-    return new Promise((resolve, reject) => {
-        exec("pkill geth", (error, stdout, stderr) => {
-            if(!error) {
-                resolve()
-            } else {
-                reject(error)
-            }
-        })
-    })
-}
-
-async function startGeth() {
-    return new Promise((resolve, reject) => {
-        fs.readFile('/dynamo/apis/geth-command.txt', 'utf8', function(err, command) {
-            if(err) {
-                reject(err)
-            } else {
-                exec(command, (error, stdout, stderr) => {
-                    if(!error) {
-                        resolve()
-                    } else {
-                        reject(error)
-                    }
-                })
-            }
-        });
-    })
-}
-
 async function updateNetwork(set) {
     return new Promise((resolve, reject) => {
         db.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
@@ -1326,14 +1296,9 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
             } else {
                 whitelistedNodes.push(url)
 
-                //write to file
-                //kill process
-                //start process
                 try {
                     await clearFile("/dynamo/bcData/node/permissioned-nodes.json")
                     await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
-                    //await killGeth();
-                    //await startGeth();
                     await updateNetwork(instanceId, {
                         whitelistedNodes: whitelistedNodes
                     })
@@ -1366,10 +1331,7 @@ app.post(`/utility/addPeer`, async (req, res) => {
                 res.send({"message": "Node URL already exists"})
             } else {
                 staticPeers.push(url)
-
-                //write to file
-                //kill process
-                //start process
+                
                 try {
                     await clearFile("/dynamo/bcData/node/static-nodes.json")
                     await writeFile("/dynamo/bcData/node/static-nodes.json", JSON.stringify(staticPeers))
