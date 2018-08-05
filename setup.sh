@@ -21,7 +21,7 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 23000";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTRPC; then
