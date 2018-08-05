@@ -1,12 +1,12 @@
 if [ $# -eq 0 ]
 then
   	pkill screen
-	screen -d -m bash -i -c "./constellation.sh | tee constellation.log"
+	screen -d -m bash -i -c "./constellation.sh | tee ./bcData/constellation.log"
 	sleep 5
-	screen -d -m bash -i -c "./quorum-node.sh | tee quorum.log"
-	screen -d -m bash -i -c "node ./apis/app.js | tee app.log"
+	screen -d -m bash -i -c "./quorum-node.sh | tee ./bcData/quorum.log"
+	screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
 	sleep 10;
-    screen -d -m bash -i -c "node ./apis/init.js | tee init.js"
+    screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -57,12 +57,12 @@ fi
 if [ $# -eq 3 ]
 then
   	pkill screen
-	screen -L -d -m ./constellation.sh $1
+    screen -d -m bash -i -c "./constellation.sh $1 | tee ./bcData/constellation.log"
 	sleep 5
-	screen -L -d -m ./quorum-node.sh $2 $3
-	screen -L -d -m node ./apis/app.js
+    screen -d -m bash -i -c "./quorum-node.sh $2 $3 | tee ./bcData/quorum.log"
+    screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
 	sleep 10;
-    screen -L -d -m node ./apis/init.js
+    screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -113,12 +113,12 @@ fi
 if [ $# -eq 4 ]
 then
   	pkill screen
-	screen -L -d -m ./constellation.sh $1
+    screen -d -m bash -i -c "./constellation.sh $1 | tee ./bcData/constellation.log"
 	sleep 5
-	screen -L -d -m ./quorum-node.sh $2 $3 $4
-	screen -L -d -m node ./apis/app.js
+    screen -d -m bash -i -c "./quorum-node.sh $2 $3 $4 | tee ./bcData/quorum.log"
+    screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
 	sleep 10;
-    screen -L -d -m node ./apis/init.js
+    screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
