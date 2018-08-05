@@ -1,7 +1,7 @@
 if [ $# -eq 0 ]
 then
   	pkill screen
-	screen -d -m ./constellation.sh
+	screen -L -d -m ./constellation.sh
 	sleep 5
 	screen -L -d -m ./quorum-node.sh
 	screen -L -d -m node ./apis/app.js
@@ -21,28 +21,28 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 23000";
-		    #exit
+		    exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTRPC; then
 			sleep 5;
 		else
 			echo "Failed due to 8545";
-		    #exit
+		    exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTCONSTELLATION; then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
-		    #exit
+		    exit
 		fi
 
         if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
-		    #exit
+		    exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
@@ -57,7 +57,7 @@ fi
 if [ $# -eq 3 ]
 then
   	pkill screen
-	screen -d -m ./constellation.sh $1
+	screen -L -d -m ./constellation.sh $1
 	sleep 5
 	screen -L -d -m ./quorum-node.sh $2 $3
 	screen -L -d -m node ./apis/app.js
@@ -113,7 +113,7 @@ fi
 if [ $# -eq 4 ]
 then
   	pkill screen
-	screen -d -m ./constellation.sh $1
+	screen -L -d -m ./constellation.sh $1
 	sleep 5
 	screen -L -d -m ./quorum-node.sh $2 $3 $4
 	screen -L -d -m node ./apis/app.js

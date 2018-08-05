@@ -2,7 +2,7 @@ if [ $# -eq 0 ]
 then
 if [ -d "bcData/cnode" ];
 then
-constellation-node bcData/cnode/constellation.conf
+constellation-node --verbosity 0 bcData/cnode/constellation.conf
 fi
 
 if [ ! -d "bcData/cnode" ];
@@ -22,7 +22,7 @@ privatekeys = ["./bcData/cnode/node.key"]
 tls = "off"
 EOF
 sleep 5
-constellation-node bcData/cnode/constellation.conf
+constellation-node --verbosity 0 bcData/cnode/constellation.conf
 fi
 fi
 
@@ -30,7 +30,7 @@ if [ $# -eq 1 ]
 then
 if [ -d "bcData/cnode" ];
 then
-constellation-node bcData/cnode/constellation.conf
+constellation-node --verbosity 0 bcData/cnode/constellation.conf
 fi
 
 if [ ! -d "bcData/cnode" ];
@@ -50,6 +50,6 @@ privatekeys = ["./bcData/cnode/node.key"]
 tls = "off"
 EOF
 sleep 5
-constellation-node bcData/cnode/constellation.conf
+constellation-node --verbosity 0 bcData/cnode/constellation.conf
 fi
 fi
