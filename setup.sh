@@ -1,12 +1,12 @@
 if [ $# -eq 0 ]
 then
   	pkill screen
-	screen -L -Logfile ./bcData/screen.log -d -m ./constellation.sh
+	screen -L -d -m bash -i -c "./constellation.sh | tee constellation.log"
 	sleep 5
-	screen -L -Logfile ./bcData/screen.log -d -m ./quorum-node.sh
-	screen -L -Logfile ./bcData/screen.log -d -m node ./apis/app.js
+	screen -L -d -m bash -i -c "./quorum-node.sh | tee quorum.log"
+	screen -L -d -m bash -i -c "node ./apis/app.js | tee app.log"
 	sleep 10;
-    screen -L -Logfile ./bcData/screen.log -d -m node ./apis/init.js
+    screen -L -d -m bash -i -c "node ./apis/init.js | tee init.js"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
