@@ -3,7 +3,7 @@ then
   	pkill screen
 	screen -d -m ./constellation.sh
 	sleep 5
-	screen -L -d -m ./quorum-node.sh
+	screen -L -Logfile ./bcData/screen.log -d -m ./quorum-node.sh
 	screen -L -d -m node ./apis/app.js
 	sleep 10;
     screen -L -d -m node ./apis/init.js
