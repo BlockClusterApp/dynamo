@@ -57,12 +57,12 @@ fi
 if [ $# -eq 3 ]
 then
   	pkill screen
-    screen -d -m ./constellation.sh $1
+    screen -L -d -m ./constellation.sh $1
 	sleep 5
-    screen -d -m ./quorum-node.sh $2 $3
-    screen -d -m bash -i -c 'node ./apis/app.js | tee ./bcData/app.log'
+    screen -L -d -m ./quorum-node.sh $2 $3
+    screen -L -d -m bash -i -c 'node ./apis/app.js | tee ./bcData/app.log'
 	sleep 10;
-    screen -d -m bash -i -c 'node ./apis/init.js | tee ./bcData/init.log'
+    screen -L -d -m bash -i -c 'node ./apis/init.js | tee ./bcData/init.log'
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -77,35 +77,35 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 23000";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTRPC; then
 			sleep 5;
 		else
 			echo "Failed due to 8545";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTCONSTELLATION; then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
-		    exit
+		    #exit
 		fi
 
         if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
 			sleep 5;
 		else
 			echo "Failed due to 6382";
-		    exit
+		    #exit
 		fi
 	done
 fi
