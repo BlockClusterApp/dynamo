@@ -21,35 +21,35 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 23000";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTRPC; then
 			sleep 5;
 		else
 			echo "Failed due to 8545";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTCONSTELLATION; then
 			sleep 5;
 		else
 			echo "Failed due to 9001";
-		    exit
+		    #exit
 		fi
 
         if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
 			sleep 5;
 		else
 			echo "Failed due to 5742";
-		    exit
+		    #exit
 		fi
 
 		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
 			sleep 5;
 		else
 			echo "Failed due to 6382";
-		    exit
+		    #exit
 		fi
 	done
 fi
