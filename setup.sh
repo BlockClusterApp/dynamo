@@ -57,12 +57,12 @@ fi
 if [ $# -eq 3 ]
 then
   	pkill screen
-    screen -d -m bash -i -c "./constellation.sh $1 | tee ./bcData/constellation.log"
+    screen -d -m bash -i -c './constellation.sh $1 | tee ./bcData/constellation.log'
 	sleep 5
-    screen -d -m bash -i -c "./quorum-node.sh $2 $3 | tee ./bcData/quorum.log"
-    screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
+    screen -d -m bash -i -c './quorum-node.sh $2 $3 | tee ./bcData/quorum.log'
+    screen -d -m bash -i -c 'node ./apis/app.js | tee ./bcData/app.log'
 	sleep 10;
-    screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
+    screen -d -m bash -i -c 'node ./apis/init.js | tee ./bcData/init.log'
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
