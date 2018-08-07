@@ -1141,20 +1141,16 @@ app.post(`/utility/createAccount`, (req, res) => {
 app.get(`/utility/nodeInfo`, (req, res) => {
     var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
     var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
-    var constellationPublicKey = fs.readFileSync('/dynamo/bcData/cnode/node.pub', 'utf8');
     res.send({
         "genesis": genesis,
-        "nodekey": nodekey,
-        "constellationPublicKey": constellationPublicKey,
+        "nodekey": nodekey
     })
 })
 
 app.get(`/utility/size`, async (req, res) => {
     var gethSize = await getDirSize("/dynamo/bcData/node");
-    var constellationSize = await getDirSize("/dynamo/bcData/cnode");
     res.send({
-        "gethSize": gethSize,
-        "constellationSize": constellationSize
+        "gethSize": gethSize
     })
 })
 
@@ -1331,7 +1327,7 @@ app.post(`/utility/addPeer`, async (req, res) => {
                 res.send({"message": "Node URL already exists"})
             } else {
                 staticPeers.push(url)
-                
+
                 try {
                     await clearFile("/dynamo/bcData/node/static-nodes.json")
                     await writeFile("/dynamo/bcData/node/static-nodes.json", JSON.stringify(staticPeers))
