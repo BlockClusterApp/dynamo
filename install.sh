@@ -114,45 +114,6 @@ else
   fi
 fi
 
-# Checking constellation version
-echo 'Checking constellation version, if not found will install'
-CONSTELLATION_PATH=$(which constellation-node)
-if [[ $CONSTELLATION_PATH != "" ]]
-then
-  CONSTELLATION_VERSION=$(constellation-node --version)
-  if [[ $CONSTELLATION_VERSION != 'Constellation Node 0.3.2' ]] && [[ $CONSTELLATION_VERSION != "" ]]
-  then
-    echo 'constellation version other than 0.3.2 detected, please see v0.8.0 release notes'
-    echo 'current:' $CONSTELLATION_VERSION
-    echo 'exiting...'
-    exit
-  fi
-fi
-
-# Installing constellation
-CONSTELLATION_PATH=$(which constellation-node)
-if [[ $CONSTELLATION_PATH = "" ]]
-then
-  echo 'Installing Constellation...'
-  mkdir -p constellation && cd constellation/
-  sudo apt-get install libdb-dev libleveldb-dev libsodium-dev zlib1g-dev libtinfo-dev
-  wget https://github.com/jpmorganchase/constellation/releases/download/v0.3.2/constellation-0.3.2-ubuntu1604.tar.xz -O constellation-0.3.2-ubuntu1604.tar.xz
-  tar -xf constellation-0.3.2-ubuntu1604.tar.xz
-  rm constellation-0.3.2-ubuntu1604.tar.xz
-  chmod +x constellation-0.3.2-ubuntu1604/constellation-node
-  DETECTED_CONSTELLATION_PATH=$(which constellation-node)
-  if [[ $DETECTED_CONSTELLATION_PATH = "" ]]
-  then
-    echo "PATH=\$PATH:"$PWD/constellation-0.3.2-ubuntu1604 >> ~/.bashrc
-    export PATH=$PWD/constellation-0.3.2-ubuntu1604:$PATH
-    source ~/.bashrc
-  fi
-  cd ..
-  echo 'Installed Constellation 0.3.2'
-else
-  echo 'Skipped installing Constellation'
-fi
-
 # Installing istanbul-tools
 OLD_GOPATH=$GOPATH
 echo 'Installing Istanbul-tools...'
