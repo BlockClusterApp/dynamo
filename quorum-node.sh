@@ -2,7 +2,7 @@ if [ $# -eq 0 ]
 then
 if [ -d "bcData/node" ];
 then
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 
 if [ ! -d "bcData/node" ];
@@ -22,7 +22,7 @@ rm ./bcData/node/genesis-temp.json
 geth --datadir ./bcData/node init ./bcData/node/genesis.json
 rm ./bcData/node/nodekey
 echo '[]' >./bcData/node/permissioned-nodes.json
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 fi
 
@@ -34,7 +34,7 @@ if [ $# -eq 2 ]
 then
 if [ -d "bcData/node" ];
 then
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 
 if [ ! -d "bcData/node" ];
@@ -59,7 +59,7 @@ $2
 EOF
 geth --datadir ./bcData/node init ./bcData/node/genesis.json
 rm ./bcData/node/nodekey
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 fi
 
@@ -71,7 +71,7 @@ if [ $# -eq 3 ]
 then
 if [ -d "bcData/node" ];
 then
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 
 if [ ! -d "bcData/node" ];
@@ -96,6 +96,6 @@ $2
 EOF
 geth --datadir ./bcData/node init ./bcData/node/genesis.json
 rm ./bcData/node/nodekey
-PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 | tee /dynamo/bcData/geth.log
+PRIVATE_CONFIG=./bcData/cnode/constellation.conf geth --datadir ./bcData/node --mine --port 23000 --rpc --rpccorsdomain "*" --rpcaddr 0.0.0.0 --rpcapi "admin,debug,eth,miner,net,personal,shh,txpool,web3,istanbul" --rpcport 8545  --ipcpath "geth.ipc" --gasprice 0 --targetgaslimit 999999999999999999 --permissioned --verbosity 2 &>>  /dynamo/bcData/geth.log
 fi
 fi
