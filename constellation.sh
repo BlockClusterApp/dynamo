@@ -2,7 +2,7 @@ if [ $# -eq 0 ]
 then
 if [ -d "bcData/cnode" ];
 then
-constellation-node bcData/cnode/constellation.conf
+constellation-node bcData/cnode/constellation.conf | tee /dynamo/bcData/constellation.log
 fi
 
 if [ ! -d "bcData/cnode" ];
@@ -23,7 +23,7 @@ tls = "off"
 verbosity = 0
 EOF
 sleep 5
-constellation-node bcData/cnode/constellation.conf
+constellation-node bcData/cnode/constellation.conf | tee /dynamo/bcData/constellation.log
 fi
 fi
 
@@ -31,7 +31,7 @@ if [ $# -eq 1 ]
 then
 if [ -d "bcData/cnode" ];
 then
-constellation-node bcData/cnode/constellation.conf
+constellation-node bcData/cnode/constellation.conf | tee /dynamo/bcData/constellation.log
 fi
 
 if [ ! -d "bcData/cnode" ];
@@ -52,6 +52,6 @@ tls = "off"
 verbosity = 0
 EOF
 sleep 5
-constellation-node bcData/cnode/constellation.conf
+constellation-node bcData/cnode/constellation.conf | tee /dynamo/bcData/constellation.log
 fi
 fi

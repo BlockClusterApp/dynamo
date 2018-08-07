@@ -1,9 +1,9 @@
 if [ $# -eq 0 ]
 then
   	pkill screen
-	screen -d -m bash -i -c "./constellation.sh | tee ./bcData/constellation.log"
+	screen -d -m  ./constellation.sh
 	sleep 5
-	screen -d -m bash -i -c "./quorum-node.sh | tee ./bcData/quorum.log"
+	screen -d -m ./quorum-node.sh
 	screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
 	sleep 10;
     screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
@@ -57,9 +57,9 @@ fi
 if [ $# -eq 3 ]
 then
   	pkill screen
-    screen -d -m bash -i -c './constellation.sh $1 | tee ./bcData/constellation.log'
+    screen -d -m ./constellation.sh $1
 	sleep 5
-    screen -d -m bash -i -c './quorum-node.sh $2 $3 | tee ./bcData/quorum.log'
+    screen -d -m ./quorum-node.sh $2 $3
     screen -d -m bash -i -c 'node ./apis/app.js | tee ./bcData/app.log'
 	sleep 10;
     screen -d -m bash -i -c 'node ./apis/init.js | tee ./bcData/init.log'
@@ -113,9 +113,9 @@ fi
 if [ $# -eq 4 ]
 then
   	pkill screen
-    screen -d -m bash -i -c "./constellation.sh $1 | tee ./bcData/constellation.log"
+    screen -d -m ./constellation.sh $1
 	sleep 5
-    screen -d -m bash -i -c "./quorum-node.sh $2 $3 $4 | tee ./bcData/quorum.log"
+    screen -d -m ./quorum-node.sh $2 $3 $4
     screen -d -m bash -i -c "node ./apis/app.js | tee ./bcData/app.log"
 	sleep 10;
     screen -d -m bash -i -c "node ./apis/init.js | tee ./bcData/init.log"
