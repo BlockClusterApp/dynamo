@@ -88,7 +88,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                         var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
                                         var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
-                                        var constellationPublicKey = fs.readFileSync('/dynamo/bcData/cnode/node.pub', 'utf8');
                                         var staticNodes = fs.readFileSync('/dynamo/bcData/node/static-nodes.json', 'utf8');
                                         var permissionedNodes = fs.readFileSync('/dynamo/bcData/node/permissioned-nodes.json', 'utf8');
 
@@ -134,7 +133,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                         "genesisBlock": genesis,
                                                                         "nodeKey": nodekey,
                                                                         "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
-                                                                        "constellationPubKey": constellationPublicKey,
                                                                         "nodeId": nodeId,
                                                                         "currentValidators": currentValidators,
                                                                         "status": "running",
@@ -204,7 +202,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                             "genesisBlock": genesis,
                                                                                                             "nodeKey": nodekey,
                                                                                                             "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
-                                                                                                            "constellationPubKey": constellationPublicKey,
                                                                                                             "nodeId": nodeId,
                                                                                                             "currentValidators": currentValidators,
                                                                                                             "status": "running",
