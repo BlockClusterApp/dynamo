@@ -54,6 +54,9 @@ jobs:
       - run:
           name: "Docker push"
           command: ./.circleci/docker-push.sh
+      - run:
+          name: "Network Update"
+          command: ./.circleci/build-end-notification.sh
         
 workflows:
   version: 2
