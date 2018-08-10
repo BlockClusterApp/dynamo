@@ -344,7 +344,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         3. Then write hash to BlockChain
     */
 
-    async function send(keu, value) {
+    async function send(key, value) {
         return new Promise((resolve, reject) => {
             assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, value, {
                 from: req.body.fromAccount,
@@ -430,8 +430,8 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         for(let key in req.body.private) {
             let timestamp = Date.now();
             let object = base64.encode(JSON.stringify({
-                key: req.body.key,
-                value: req.body.value,
+                key: key,
+                value: req.body.private[key],
                 timestamp: timestamp
             }))
 
@@ -451,6 +451,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
                 let txnHash = await send(key, req.body.public[key])
                 txns.push(txnHash)
             } catch(e) {
+                console.log(e)
                 res.send({"error": e})
                 return;
             }
