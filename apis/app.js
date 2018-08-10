@@ -332,7 +332,7 @@ app.post(`/assets/getBulkAssetBalance`, (req, res) => {
     })
 })
 
-app.post(`/assets/updateAssetInfo`, (req, res) => {
+app.post(`/assets/updateAssetInfo`, async (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -344,86 +344,120 @@ app.post(`/assets/updateAssetInfo`, (req, res) => {
         3. Then write hash to BlockChain
     */
 
-    if(req.body.visibility === "private") {
-        let timestamp = Date.now();
-        let object = base64.encode(JSON.stringify({
-            key: req.body.key,
-            value: req.body.value,
-            timestamp: timestamp
-        }))
+    async function send(keu, value) {
+        return new Promise((resolve, reject) => {
+            assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, value, {
+                from: req.body.fromAccount,
+                gas: '4712388'
+            }, function(error, txnHash){
+                if(error) {
+                    reject(error.toString())
+                } else {
+                    resolve(txnHash)
+                }
+            })
+        })
+    }
 
+    async function encryptSend(publicKey, object) {
+        return new Promise((resolve, reject) => {
+            db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+                if(!err && keyPair) {
+                    let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+
+                    exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
+                        if(!error) {
+                            stdout = stdout.split(" ")
+                            let ciphertext = stdout[0].substr(2).slice(0, -1)
+                            let capsule = stdout[1].substr(2).slice(0, -2)
+
+                            let ciphertext_hash = sha3.keccak256(ciphertext);
+                            let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {canonical: true});
+
+                            request({
+                                url: `${Config.getImpulseURL()}/writeObject`,
+                                method: "POST",
+                                json: {
+                                    publicKey: publicKey,
+                                    encryptedData: ciphertext,
+                                    signature: signature,
+                                    metadata: {
+                                        assetName: req.body.assetName,
+                                        assetType: "solo",
+                                        identifier: req.body.identifier
+                                    },
+                                    capsule: capsule
+                                }
+                            }, (error, result, body) => {
+                                if(!error) {
+                                    if(body.error) {
+                                        reject(body.error.toString())
+                                    } else {
+                                        assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
+                                            from: req.body.fromAccount,
+                                            gas: '4712388'
+                                        }, function(error, txnHash){
+                                            if(error) {
+                                                reject(error.toString())
+                                            } else {
+                                                resolve(txnHash)
+                                            }
+                                        })
+                                    }
+                                } else {
+                                    reject(error.toString())
+                                }
+                            })
+
+                        } else {
+                            reject(error.toString())
+                        }
+                    })
+                } else {
+                    reject("You are not the owner of the private key required for signing meta data")
+                }
+            })
+        })
+    }
+
+    let txns = [];
+
+    if(req.body.private) {
         let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
             from: web3.eth.accounts[0]
         });
 
-        db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
-            if(!err && keyPair) {
-                let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+        for(let key in req.body.private) {
+            let timestamp = Date.now();
+            let object = base64.encode(JSON.stringify({
+                key: req.body.key,
+                value: req.body.value,
+                timestamp: timestamp
+            }))
 
-                exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
-                    if(!error) {
-                        stdout = stdout.split(" ")
-                        let ciphertext = stdout[0].substr(2).slice(0, -1)
-                        let capsule = stdout[1].substr(2).slice(0, -2)
-
-                        let ciphertext_hash = sha3.keccak256(ciphertext);
-                        let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {canonical: true});
-
-                        request({
-                            url: `${Config.getImpulseURL()}/writeObject`,
-                            method: "POST",
-                            json: {
-                                publicKey: publicKey,
-                                encryptedData: ciphertext,
-                                signature: signature,
-                                metadata: {
-                                    assetName: req.body.assetName,
-                                    assetType: "solo",
-                                    identifier: req.body.identifier
-                                },
-                                capsule: capsule
-                            }
-                        }, (error, result, body) => {
-                            if(!error) {
-                                if(body.error) {
-                                    res.send({"error": body.error.toString()})
-                                } else {
-                                    assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
-                                        from: req.body.fromAccount,
-                                        gas: '4712388'
-                                    }, function(error, txnHash){
-                                        if(error) {
-                                            res.send({"error": error.toString()})
-                                        } else {
-                                            res.send({"txnHash": txnHash})
-                                        }
-                                    })
-                                }
-                            } else {
-                                res.send({"error": error.toString()})
-                            }
-                        })
-
-                    } else {
-                        res.send({"error": error.toString()})
-                    }
-                })
-            } else {
-                res.send({"error": "You are not the owner of the private key required for signing meta data"})
+            try {
+                let txnHash = await encryptSend(publicKey, object)
+                txns.push(txnHash)
+            } catch(e) {
+                res.send({"error": e})
+                return;
             }
-        })
-    } else {
-        assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, req.body.key, req.body.value, {
-            from: req.body.fromAccount,
-            gas: '4712388'
-        }, function(error, txnHash){
-            if(error) {
-                res.send({"error": error.toString()})
-            } else {
-                res.send({"txnHash": txnHash})
-            }
-        })
+        }
     }
+
+    if(req.body.public) {
+        for(let key in req.body.public) {
+            try {
+                let txnHash = await send(key, req.body.public[key])
+                txns.push(txnHash)
+            } catch(e) {
+                res.send({"error": e})
+                return;
+            }
+        }
+    }
+
+    res.send({"txnxHash": txns})
 })
 
 app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
