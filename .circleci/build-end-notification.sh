@@ -3,7 +3,7 @@
 . ./.circleci/export-env-vars.sh
 
 curl -X POST \
-  https://dev.blockcluster.io/api/networks/update-container-images \
+  "${API_HOST}/api/networks/update-container-images" \
   -H "authorization: ${NETWORK_UPDATE_ID}:${NETWORK_UPDATE_KEY}" \
   -H 'cache-control: no-cache' \
   -H 'content-type: application/x-www-form-urlencoded' \
