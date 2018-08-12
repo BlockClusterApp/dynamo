@@ -430,7 +430,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 						if (events[count].event === "soloAssetIssued") {
                             try {
                                 await upsertSoloAsset({
-                                    instanceId: instanceId,
                                     assetName: events[count].args.assetName,
                                     uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                                 }, {
@@ -445,7 +444,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 						} else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
                             try {
                                 await upsertSoloAsset({
-                                    instanceId: instanceId,
                                     assetName: events[count].args.assetName,
                                     uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                                 }, {
@@ -473,7 +471,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
                                     if(plainObj) {
                                         await upsertSoloAsset({
-                                            instanceId: instanceId,
                                             assetName: assetName,
                                             uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
                                         }, {
@@ -485,7 +482,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
                             try {
                                 let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKeyOwner})
+                                let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKeyOwner})
 
                                 //check if you are issuer of data
                                 if(keyPair) {
@@ -523,7 +520,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 						} else if (events[count].event === "transferredOwnershipOfSoloAsset") {
                             try {
                                 await upsertSoloAsset({
-                                    instanceId: instanceId,
                                     assetName: events[count].args.assetName,
     								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                                 }, {
@@ -536,7 +532,6 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 						} else if(events[count].event === "closedSoloAsset") {
                             try {
                                 await upsertSoloAsset({
-                                    instanceId: instanceId,
                                     assetName: events[count].args.assetName,
     								uniqueIdentifier: parseAndConvertData(events[count].args.uniqueIdentifier)
                                 }, {
@@ -576,7 +571,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         						if (events[count].event === "soloAssetIssued") {
         							try {
                                         await upsertSoloAssetAuditTrail({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
                                             uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash
@@ -589,7 +583,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                         })
 
                                         await notifyClient({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
                                             uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash,
@@ -606,7 +599,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         						} else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
         							try {
                                         await upsertSoloAssetAuditTrail({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
                                             uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash
@@ -619,7 +611,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                         })
 
                                         await notifyClient({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
                                             uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash,
@@ -637,7 +628,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         						} else if (events[count].event === "transferredOwnershipOfSoloAsset") {
                                     try {
                                         await upsertSoloAssetAuditTrail({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
             								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash
@@ -649,7 +639,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         								})
 
                                         await notifyClient({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
             								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                             eventHash: eventHash,
@@ -665,7 +654,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         						} else if(events[count].event === "closedSoloAsset") {
                                     try {
                                         await upsertSoloAssetAuditTrail({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
             								uniqueIdentifier: events[count].args.uniqueIdentifier,
                                             eventHash: eventHash
@@ -677,7 +665,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         								})
 
                                         await notifyClient({
-                                            instanceId: instanceId,
                                             assetName: events[count].args.assetName,
             								uniqueIdentifier: events[count].args.uniqueIdentifier,
                                             eventHash: eventHash,
@@ -693,12 +680,11 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         						} else if(events[count].event === "soloAssetAccessGranted") {
                                     try {
                                         let ownerPublicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: ownerPublicKey})
+                                        let keyPair = await searchEncryptionKey({compressed_public_key_hex: ownerPublicKey})
 
                                         if(keyPair) {
                                             //u r the owner
                                             await upsertSoloAssetAuditTrail({
-                                                instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
                 								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash
@@ -710,7 +696,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
             								})
 
                                             await notifyClient({
-                                                instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
                 								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash,
@@ -737,7 +722,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                                     if(plainObj) {
                                                         await upsertSoloAsset({
-                                                            instanceId: instanceId,
                                                             assetName: pastEvents[iii].args.assetName,
                                                             uniqueIdentifier: parseAndConvertData(pastEvents[iii].args.uniqueAssetIdentifier)
                                                         }, {
@@ -745,7 +729,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                         })
 
                                                         await upsertSoloAssetAuditTrail({
-                                                            instanceId: instanceId,
                                                             assetName: pastEvents[iii].args.assetName,
                                                             uniqueIdentifier: uniqueAssetIdentifierValue,
                                                             eventHash: sha256(JSON.stringify(pastEvents[iii]))
@@ -758,7 +741,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                         })
 
                                                         await notifyClient({
-                                                            instanceId: instanceId,
                                                             assetName: pastEvents[iii].args.assetName,
                                                             uniqueIdentifier: uniqueAssetIdentifierValue,
                                                             eventHash: sha256(JSON.stringify(pastEvents[iii])),
@@ -779,11 +761,10 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                 } else if(events[count].event === "soloAssetAccessRevoked") {
                                     try {
                                         let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKey})
+                                        let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
 
                                         if(keyPair) {
                                             await upsertSoloAssetAuditTrail({
-                                                instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
                 								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash
@@ -795,7 +776,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
             								})
 
                                             await notifyClient({
-                                                instanceId: instanceId,
                                                 assetName: events[count].args.assetName,
                 								uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
                                                 eventHash: eventHash,
@@ -827,7 +807,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                             if(plainObj) {
                                                 await upsertSoloAssetAuditTrail({
-                                                    instanceId: instanceId,
                                                     assetName: assetName,
                                                     uniqueIdentifier: uniqueAssetIdentifier,
                                                     eventHash: eventHash
@@ -840,7 +819,6 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                                 })
 
                                                 await notifyClient({
-                                                    instanceId: instanceId,
                                                     assetName: assetName,
                                                     uniqueIdentifier: uniqueAssetIdentifier,
                                                     eventHash: eventHash,
@@ -856,7 +834,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                     try {
                                         let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
-                                        let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: publicKey})
+                                        let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
                                         if(keyPair) {
                                             fetchAndWriteEncryptedData(
                                                 events[count].args.assetName,
@@ -924,7 +902,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
 					for(let count = 0; count < events.length; count++) {
 						if (events[count].event === "bulkAssetTypeCreated") {
                             await upsertAssetTypes({
-                                instanceId: instanceId,
                                 type: "bulk",
                                 assetName: events[count].args.assetName
                             }, {
@@ -935,7 +912,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             })
 
                             await notifyClient({
-                                instanceId: instanceId,
                                 type: "bulk",
                                 assetName: events[count].args.assetName,
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
@@ -949,7 +925,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             })
                         } else if (events[count].event === "bulkAssetsIssued") {
                             await upsertAssetTypes({
-                                instanceId: instanceId,
                                 type: "bulk",
                                 assetName: events[count].args.assetName
                             }, {type: "bulk"}, {
@@ -959,7 +934,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             var parts = assets.getBulkAssetParts.call(events[count].args.assetName)
 
                             await notifyClient({
-                                instanceId: instanceId,
                                 type: "bulk",
                                 assetName: events[count].args.assetName,
                                 units: (new BigNumber(events[count].args.units.toNumber())).dividedBy(addZeros(1, parts)).toFixed(parseInt(parts)).toString(),
@@ -970,7 +944,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             })
 						} else if (events[count].event === "soloAssetTypeCreated") {
                             await upsertAssetTypes({
-                                instanceId: instanceId,
                                 type: "solo",
                                 assetName: events[count].args.assetName
                             }, {
@@ -980,7 +953,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             })
 
                             await notifyClient({
-                                instanceId: instanceId,
                                 type: "solo",
                                 assetName: events[count].args.assetName,
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
@@ -992,7 +964,6 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             })
 						} else if (events[count].event === "soloAssetIssued") {
                             await upsertAssetTypes({
-                                instanceId: instanceId,
                                 type: "solo",
                                 assetName: events[count].args.assetName
                             }, {type: "solo"}, {
@@ -1116,7 +1087,6 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
 
                                 if(plainObj) {
                                     await upsertStreamItem({
-                                        instanceId: instanceId,
                                         streamName: events[count].args.streamName,
                                         streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
                                     }, {
@@ -1125,7 +1095,6 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
                                     })
 
                                     await notifyClient({
-                                        instanceId: instanceId,
                                         streamName: events[count].args.streamName,
                                         eventHash: sha256(JSON.stringify(events[count])),
                                         eventName: "assetLocked",
@@ -1139,7 +1108,7 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
 
                             try {
                                 let publicKey = events[count].args.ownerPublicKey
-                                let keyPair = await searchEncryptionKey({instanceId: instanceId, compressed_public_key_hex: base64ToHex(publicKey)})
+                                let keyPair = await searchEncryptionKey({compressed_public_key_hex: base64ToHex(publicKey)})
 
                                 if(keyPair) {
                                     console.log("You are the owner daya the data")
@@ -1269,7 +1238,6 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
 						if (events[count].event === "created") {
                             try {
                                 await upsertStream({
-                                    instanceId: instanceId,
                                     streamName: events[count].args.streamName,
                                 }, {
                                     streamNameHash: events[count].args.streamNameHash,
@@ -1277,7 +1245,6 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
                                 })
 
                                 await notifyClient({
-                                    instanceId: instanceId,
                                     streamName: events[count].args.streamName,
                                     streamNameHash: events[count].args.streamNameHash,
                                     admin: events[count].args.admin,
@@ -1324,7 +1291,7 @@ async function fetchAuthoritiesList (web3) {
 async function unlockAccounts(web3, db) {
     return new Promise((resolve, reject) => {
         let instanceId = process.env.instanceId;
-        localDB.collection("bcAccounts").find({instanceId: instanceId}).toArray(function(error, accounts) {
+        localDB.collection("bcAccounts").find({}).toArray(function(error, accounts) {
             if(error) {
                 reject(error)
             } else {
