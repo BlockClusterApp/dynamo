@@ -14,6 +14,7 @@ const Config = require('./config');
 
 let instanceId = process.env.instanceId;
 let db = null;
+let localDB = null;
 
 function instanceIDGenerate() {
     var ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
@@ -28,7 +29,7 @@ function instanceIDGenerate() {
 
 async function upsertAccounts(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("bcAccounts").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("bcAccounts").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -49,6 +50,15 @@ async function upsertNetwork(query, set) {
         });
     })
 }
+
+MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+    if(!err) {
+        localDB = database.db("admin");
+    } else {
+        console.log(err)
+    }
+})
+
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
