@@ -18,6 +18,7 @@ const express = require('express')
 const app = express()
 
 var db = null;
+var localDB = null;
 var callbackURL = null;
 
 app.listen(5742)
@@ -213,7 +214,7 @@ async function updateDB(instanceId, set) {
 
 async function upsertSoloAsset(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("soloAssets").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("soloAssets").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -225,7 +226,7 @@ async function upsertSoloAsset(query, set) {
 
 async function upsertSoloAssetAuditTrail(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("soloAssetAudit").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("soloAssetAudit").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -237,7 +238,7 @@ async function upsertSoloAssetAuditTrail(query, set) {
 
 async function upsertStream(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("streams").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("streams").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -249,7 +250,7 @@ async function upsertStream(query, set) {
 
 async function upsertStreamItem(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("streamsItems").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("streamsItems").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -262,7 +263,7 @@ async function upsertStreamItem(query, set) {
 async function upsertAssetTypes(query, set, inc) {
     return new Promise((resolve, reject) => {
         if(inc) {
-            db.collection("assetTypes").updateOne(query, { $set: set, $inc: inc }, {upsert: true, safe: false}, function(err, res) {
+            localDB.collection("assetTypes").updateOne(query, { $set: set, $inc: inc }, {upsert: true, safe: false}, function(err, res) {
                 if(err) {
                     reject(err)
                 } else {
@@ -270,7 +271,7 @@ async function upsertAssetTypes(query, set, inc) {
                 }
             });
         } else {
-            db.collection("assetTypes").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+            localDB.collection("assetTypes").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
                 if(err) {
                     reject(err)
                 } else {
@@ -284,7 +285,7 @@ async function upsertAssetTypes(query, set, inc) {
 
 async function upsertOrder(query, set) {
     return new Promise((resolve, reject) => {
-        db.collection("orders").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("orders").updateOne(query, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -296,7 +297,7 @@ async function upsertOrder(query, set) {
 
 async function searchEncryptionKey(query) {
     return new Promise((resolve, reject) => {
-        db.collection("encryptionKeys").findOne(query, function(err, res) {
+        localDB.collection("encryptionKeys").findOne(query, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -308,7 +309,7 @@ async function searchEncryptionKey(query) {
 
 async function searchSecret(query) {
     return new Promise((resolve, reject) => {
-        db.collection("secrets").findOne(query, function(err, res) {
+        localDB.collection("secrets").findOne(query, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -320,7 +321,7 @@ async function searchSecret(query) {
 
 async function searchAcceptedOrder(query) {
     return new Promise((resolve, reject) => {
-        db.collection("acceptedOrders").findOne(query, function(err, res) {
+        localDB.collection("acceptedOrders").findOne(query, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -1323,7 +1324,7 @@ async function fetchAuthoritiesList (web3) {
 async function unlockAccounts(web3, db) {
     return new Promise((resolve, reject) => {
         let instanceId = process.env.instanceId;
-        db.collection("bcAccounts").find({instanceId: instanceId}).toArray(function(error, accounts) {
+        localDB.collection("bcAccounts").find({instanceId: instanceId}).toArray(function(error, accounts) {
             if(error) {
                 reject(error)
             } else {
@@ -1373,6 +1374,13 @@ async function getPeers(web3) {
     })
 }
 
+MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+    if(!err) {
+        localDB = database.db("admin");
+    } else {
+        console.log(err)
+    }
+})
 
 //MongoClient.connect("mongodb://127.0.0.1:3001", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
