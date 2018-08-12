@@ -28,6 +28,7 @@ const EthereumUtil = require('ethereumjs-util')
 let instanceId = process.env.instanceId;
 let db = null;
 let network = null;
+let localDB = null;
 
 process.on('uncaughtException', function (error) {
    console.log(error);
@@ -69,6 +70,14 @@ function base64ToHex(str) {
     }
     return hex.join("");
 }
+
+MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+    if(!err) {
+        localDB = database.db("admin");
+    } else {
+        console.log(err)
+    }
+})
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
@@ -176,6 +185,36 @@ app.post(`/assets/createAssetType`, async (req, res) => {
     }
 })
 
+app.get("/assets/assetTypes", (req, res) => {
+    localDB.collection("assetTypes").find({}).toArray(function(err, result) {
+        if(err) {
+            reject(err)
+        } else {
+            resolve()
+        }
+    })
+})
+
+app.get("/assets/orders", (req, res) => {
+    localDB.collection("orders").find({}).toArray(function(err, result) {
+        if(err) {
+            reject(err)
+        } else {
+            resolve()
+        }
+    })
+})
+
+app.get("/streams/streamTypes", (req, res) => {
+    localDB.collection("streams").find({}).toArray(function(err, result) {
+        if(err) {
+            reject(err)
+        } else {
+            resolve()
+        }
+    })
+})
+
 app.post(`/assets/issueSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -193,7 +232,7 @@ app.post(`/assets/issueSoloAsset`, (req, res) => {
     let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
     let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
 
-    db.collection("encryptionKeys").insertOne({
+    localDB.collection("encryptionKeys").insertOne({
         private_key_hex: private_key_hex,
         compressed_public_key_hex: compressed_public_key_hex,
         instanceId: instanceId
@@ -302,7 +341,7 @@ app.post(`/assets/getSoloAssetInfo`, (req, res) => {
         query.assetName = req.body.assetName;
         query.uniqueIdentifier = parseAndConvertData(req.body.identifier);
 
-        db.collection("soloAssets").findOne(query, function(err, result) {
+        localDB.collection("soloAssets").findOne(query, function(err, result) {
             if(err) {
                 res.send({"error": err.toString()})
             } else if(result) {
@@ -361,7 +400,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
 
     async function encryptSend(publicKey, object) {
         return new Promise((resolve, reject) => {
-            db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+            localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
                 if(!err && keyPair) {
                     let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
@@ -477,7 +516,7 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
         from: web3.eth.accounts[0]
     });
 
-    db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+    localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
         if(!err && keyPair) {
             let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
@@ -543,7 +582,7 @@ app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
         from: web3.eth.accounts[0]
     });
 
-    db.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
+    localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
         if(!err && keyPair) {
             let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
             let signature = ec.sign(sha3.keccak256(keyPair.compressed_public_key_hex), keyPair.private_key_hex, "hex", {canonical: true});
@@ -609,12 +648,12 @@ app.post(`/assets/placeOrder`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var secret = generateSecret();
 
-    db.collection("networks").findOne({instanceId: req.body.toNetworkId}, function(err, node) {
+    localDB.collection("networks").findOne({instanceId: req.body.toNetworkId}, function(err, node) {
         if(!err && node) {
             var toGenesisBlockHash = node.genesisBlockHash;
             atomicSwap.calculateHash.call(secret, (error, hash) => {
                 if (!error) {
-                    db.collection("secrets").insertOne({
+                    localDB.collection("secrets").insertOne({
                         "instanceId": req.body.toNetworkId,
                         "secret": secret,
                         "hash": hash,
@@ -708,10 +747,10 @@ app.post(`/assets/placeOrder`, (req, res) => {
 })
 
 app.post(`/assets/fulfillOrder`, (req, res) => {
-    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+    localDB.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-            db.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
+            localDB.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
                 if(!err && node) {
                     let toNetwork = node;
                     var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
@@ -752,7 +791,7 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                         var atomicSwap = atomicSwapContract.at(toNetwork.atomicSwapContractAddress);
                         var assetsContract = web3.eth.contract(smartContracts.assets.abi);
                         var assets = assetsContract.at(toNetwork.assetsContractAddress);
-                        db.collection("acceptedOrders").insertOne({
+                        localDB.collection("acceptedOrders").insertOne({
                             "instanceId": instanceId,
                             "buyerInstanceId": req.body.toNetworkId,
                             "hash": req.body.orderId
@@ -834,7 +873,7 @@ app.post(`/assets/cancelOrder`, (req, res) => {
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
 
-    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+    localDB.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             atomicSwap.unlock.sendTransaction(
                 req.body.orderId, {
@@ -856,7 +895,7 @@ app.post(`/assets/cancelOrder`, (req, res) => {
 })
 
 app.post(`/assets/getOrderInfo`, (req, res) => {
-    db.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
+    localDB.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             if(order.fromAssetType === "bulk") {
                 order.fromAssetUnits = (new BigNumber(order.fromAssetUnits)).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
@@ -880,7 +919,7 @@ app.post(`/assets/search`, (req, res) => {
     var query = req.body;
     query.instanceId = instanceId;
 
-    db.collection("soloAssets").find(query, function(err, result) {
+    localDB.collection("soloAssets").find(query, function(err, result) {
         if(err) {
             res.send({"error": "Search Error Occured"})
         } else {
@@ -893,7 +932,7 @@ app.post(`/streams/search`, (req, res) => {
     var query = req.body;
     query.instanceId = instanceId;
 
-    db.collection("streamsItems").find(query, function(err, result) {
+    localDB.collection("streamsItems").find(query, function(err, result) {
         if(err) {
             res.send({"error": "Search Error Occured"})
         } else {
@@ -1042,7 +1081,7 @@ app.post(`/streams/publish`, (req, res) => {
             })
         }
 
-        db.collection("encryptionKeys").insertOne({
+        localDB.collection("encryptionKeys").insertOne({
             private_key_hex: private_key_hex,
             compressed_public_key_hex: compressed_public_key_hex,
             instanceId: instanceId
@@ -1151,7 +1190,7 @@ app.post(`/utility/createAccount`, (req, res) => {
                 id: new Date().getTime()
             }, function(error) {
                 if(!error) {
-                    db.collection("bcAccounts").insertOne({
+                    localDB.collection("bcAccounts").insertOne({
                         "instanceId": instanceId,
                         "address": result.result,
                         "password": req.body.password,
@@ -1171,7 +1210,15 @@ app.post(`/utility/createAccount`, (req, res) => {
     })
 })
 
-
+app.get(`/utility/accounts`, (req, res) => {
+    localDB.collection("bcAccounts").find({}).toArray(function(err, result) {
+        if(err) {
+            res.send(result)
+        } else {
+            res.send({"error": err})
+        }
+    })
+})
 
 app.get(`/utility/nodeInfo`, (req, res) => {
     var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
@@ -1276,7 +1323,7 @@ async function writeFile(file, content) {
 
 async function updateNetwork(set) {
     return new Promise((resolve, reject) => {
-        db.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
+        localDB.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
             if(err) {
                 reject(err)
             } else {
