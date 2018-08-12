@@ -648,12 +648,12 @@ app.post(`/assets/placeOrder`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var secret = generateSecret();
 
-    localDB.collection("networks").findOne({instanceId: req.body.toNetworkId}, function(err, node) {
+    db.collection("networks").findOne({instanceId: req.body.toNetworkId}, function(err, node) {
         if(!err && node) {
             var toGenesisBlockHash = node.genesisBlockHash;
             atomicSwap.calculateHash.call(secret, (error, hash) => {
                 if (!error) {
-                    localDB.collection("secrets").insertOne({
+                    db.collection("secrets").insertOne({
                         "instanceId": req.body.toNetworkId,
                         "secret": secret,
                         "hash": hash,
@@ -676,21 +676,6 @@ app.post(`/assets/placeOrder`, (req, res) => {
                                 to_asset_parts = _assets.getBulkAssetParts.call(req.body.toAssetName)
                                 req.body.toAssetUnits = (new BigNumber(req.body.toAssetUnits)).multipliedBy(addZeros(1, to_asset_parts)).toString()
                             }
-
-                            console.log(req.body.toAddress,
-                            hash,
-                            req.body.fromAssetLockMinutes,
-                            req.body.fromAssetType,
-                            req.body.fromAssetName,
-                            req.body.fromAssetUniqueIdentifier,
-                            req.body.fromAssetUnits,
-                            from_asset_parts.toString(),
-                            req.body.toAssetType,
-                            req.body.toAssetName,
-                            req.body.toAssetUnits,
-                            to_asset_parts.toString(),
-                            req.body.toAssetUniqueIdentifier,
-                            toGenesisBlockHash)
 
                             assets.approve.sendTransaction(
                                 req.body.fromAssetType,
@@ -750,7 +735,7 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
     localDB.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-            localDB.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
+            db.collection("networks").findOne({instanceId: req.body.toNetworkId, user: network.user}, function(err, node) {
                 if(!err && node) {
                     let toNetwork = node;
                     var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
@@ -791,7 +776,7 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                         var atomicSwap = atomicSwapContract.at(toNetwork.atomicSwapContractAddress);
                         var assetsContract = web3.eth.contract(smartContracts.assets.abi);
                         var assets = assetsContract.at(toNetwork.assetsContractAddress);
-                        localDB.collection("acceptedOrders").insertOne({
+                        db.collection("acceptedOrders").insertOne({
                             "instanceId": instanceId,
                             "buyerInstanceId": req.body.toNetworkId,
                             "hash": req.body.orderId
@@ -1323,7 +1308,7 @@ async function writeFile(file, content) {
 
 async function updateNetwork(set) {
     return new Promise((resolve, reject) => {
-        localDB.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
+        db.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
             if(err) {
                 reject(err)
             } else {
