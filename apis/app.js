@@ -188,9 +188,9 @@ app.post(`/assets/createAssetType`, async (req, res) => {
 app.get("/assets/assetTypes", (req, res) => {
     localDB.collection("assetTypes").find({}).toArray(function(err, result) {
         if(err) {
-            reject(err)
+            res.send({"error": err})
         } else {
-            resolve()
+            res.send(result)
         }
     })
 })
@@ -198,9 +198,9 @@ app.get("/assets/assetTypes", (req, res) => {
 app.get("/assets/orders", (req, res) => {
     localDB.collection("orders").find({}).toArray(function(err, result) {
         if(err) {
-            reject(err)
+            res.send({"error": err})
         } else {
-            resolve()
+            res.send(result)
         }
     })
 })
@@ -208,9 +208,9 @@ app.get("/assets/orders", (req, res) => {
 app.get("/streams/streamTypes", (req, res) => {
     localDB.collection("streams").find({}).toArray(function(err, result) {
         if(err) {
-            reject(err)
+            res.send({"error": err})
         } else {
-            resolve()
+            res.send(result)
         }
     })
 })
@@ -1213,9 +1213,9 @@ app.post(`/utility/createAccount`, (req, res) => {
 app.get(`/utility/accounts`, (req, res) => {
     localDB.collection("bcAccounts").find({}).toArray(function(err, result) {
         if(err) {
-            res.send(result)
-        } else {
             res.send({"error": err})
+        } else {
+            res.send(result)
         }
     })
 })
