@@ -337,7 +337,6 @@ app.post(`/assets/getSoloAssetInfo`, (req, res) => {
 
     try {
         var query = {};
-        query.instanceId = instanceId;
         query.assetName = req.body.assetName;
         query.uniqueIdentifier = parseAndConvertData(req.body.identifier);
 
@@ -347,7 +346,7 @@ app.post(`/assets/getSoloAssetInfo`, (req, res) => {
             } else if(result) {
                 res.send(result)
             } else {
-                res.send({"error": result.toString()})
+                res.send({"error": err.toString()})
             }
         });
     } catch(e) {
