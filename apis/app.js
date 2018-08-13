@@ -883,15 +883,15 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
     localDB.collection("orders").findOne({instanceId: instanceId, atomicSwapHash: req.body.orderId}, function(err, order) {
         if(!err && order) {
             if(order.fromAssetType === "bulk") {
-                order.fromAssetUnits = (new BigNumber(order.fromAssetUnits)).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
+                order.convertedFromAssetUnits = (new BigNumber(order.fromAssetUnits)).dividedBy(addZeros(1, order.fromAssetParts)).toFixed(parseInt(order.fromAssetParts)).toString()
             }
 
             if(order.toAssetType === "bulk") {
-                order.toAssetUnits = (new BigNumber(order.toAssetUnits)).dividedBy(addZeros(1, order.toAssetParts)).toFixed(parseInt(order.toAssetParts)).toString()
+                order.convertedToAssetUnits = (new BigNumber(order.toAssetUnits)).dividedBy(addZeros(1, order.toAssetParts)).toFixed(parseInt(order.toAssetParts)).toString()
             }
 
-            delete order.toAssetParts;
-            delete order.fromAssetParts;
+            //delete order.toAssetParts;
+            //delete order.fromAssetParts;
 
             res.send(order)
         } else {
