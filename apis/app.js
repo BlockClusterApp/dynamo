@@ -813,9 +813,11 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                                             order.toAssetName,
                                             order.toAssetId,
                                             order.toAssetUnits,
+                                            order.toAssetParts.toString() || 0,
                                             order.fromAssetType,
                                             order.fromAssetName,
                                             order.fromAssetUnits,
+                                            order.fromAssetParts.toString() || 0,
                                             order.fromAssetId,
                                             network.genesisBlockHash, {
                                                 from: order.toAddress,
@@ -830,9 +832,11 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                                                 order.toAssetName,
                                                 order.toAssetId,
                                                 order.toAssetUnits,
+                                                order.toAssetParts.toString() || 0,
                                                 order.fromAssetType,
                                                 order.fromAssetName,
                                                 order.fromAssetUnits,
+                                                order.fromAssetParts.toString() || 0,
                                                 order.fromAssetId,
                                                 network.genesisBlockHash, {
                                                     from: order.toAddress,
