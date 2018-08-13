@@ -635,6 +635,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
         									owner: events[count].args.to,
                                             eventName: "transferredOwnershipOfSoloAsset",
                                             timestamp: parseInt(blockDetails.timestamp),
+                                            description: events[count].args.description,
                                             transactionHash: events[count].transactionHash
         								})
 
@@ -645,6 +646,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                             owner: events[count].args.to,
                                             eventName: "transferredOwnershipOfSoloAsset",
                                             timestamp: parseInt(blockDetails.timestamp),
+                                            description: events[count].args.description,
                                             transactionHash: events[count].transactionHash
                                         })
                                     } catch(e) {
@@ -908,7 +910,8 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
                                 admin: events[count].args.admin,
                                 units: 0,
-                                parts: events[count].args.parts.toString()
+                                parts: events[count].args.parts.toString(),
+                                description: events[count].args.description
                             })
 
                             await notifyClient({
@@ -921,6 +924,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 eventHash: sha256(JSON.stringify(events[count])),
                                 eventName: "bulkAssetTypeCreated",
                                 transactionHash: events[count].transactionHash,
+                                description: events[count].args.description,
                                 timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                             })
                         } else if (events[count].event === "bulkAssetsIssued") {
@@ -949,6 +953,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                             }, {
                                 uniqueIdentifier: events[count].args.uniqueIdentifier,
                                 admin: events[count].args.authorizedIssuer,
+                                description: events[count].args.description,
                                 units: 0
                             })
 
@@ -959,6 +964,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress)
                                 admin: events[count].args.authorizedIssuer,
                                 eventHash: sha256(JSON.stringify(events[count])),
                                 eventName: "soloAssetTypeCreated",
+                                description: events[count].args.description,
                                 transactionHash: events[count].transactionHash,
                                 timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                             })
@@ -1241,7 +1247,8 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
                                     streamName: events[count].args.streamName,
                                 }, {
                                     streamNameHash: events[count].args.streamNameHash,
-                                    admin: events[count].args.admin
+                                    admin: events[count].args.admin,
+                                    description: events[count].args.description
                                 })
 
                                 await notifyClient({
@@ -1252,6 +1259,7 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
                                     eventName: "created",
                                     key: plainObj.key,
                                     data: plainObj.value,
+                                    description: events[count].args.description,
                                     transactionHash: events[count].transactionHash,
                                     timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
                                 })
