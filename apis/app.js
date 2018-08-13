@@ -904,7 +904,6 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
 
 app.post(`/assets/search`, (req, res) => {
     var query = req.body;
-    query.instanceId = instanceId;
 
     localDB.collection("soloAssets").find(query, function(err, result) {
         if(err) {
@@ -917,7 +916,6 @@ app.post(`/assets/search`, (req, res) => {
 
 app.post(`/streams/search`, (req, res) => {
     var query = req.body;
-    query.instanceId = instanceId;
 
     localDB.collection("streamsItems").find(query, function(err, result) {
         if(err) {
