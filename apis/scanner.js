@@ -309,7 +309,7 @@ async function searchEncryptionKey(query) {
 
 async function searchSecret(query) {
     return new Promise((resolve, reject) => {
-        localDB.collection("secrets").findOne(query, function(err, res) {
+        db.collection("secrets").findOne(query, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -321,7 +321,7 @@ async function searchSecret(query) {
 
 async function searchAcceptedOrder(query) {
     return new Promise((resolve, reject) => {
-        localDB.collection("acceptedOrders").findOne(query, function(err, res) {
+        db.collection("acceptedOrders").findOne(query, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -1176,7 +1176,7 @@ async function clearAtomicSwaps(web3, blockNumber, network) {
                             let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
                             let genesisBlockHash = atomicSwap.genesisBlockHash.call();
 
-                            console.log(genesisBlockHash, atomicSwapOtherChainDetails[4])
+                            console.log(genesisBlockHash, atomicSwapOtherChainDetails[5])
 
                             if(genesisBlockHash != atomicSwapOtherChainDetails[5]) {
                                 try {
@@ -1197,6 +1197,8 @@ async function clearAtomicSwaps(web3, blockNumber, network) {
                             let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
                             let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
                             let genesisBlockHash = atomicSwap.genesisBlockHash.call();
+
+                            console.log(genesisBlockHash, atomicSwapOtherChainDetails[5])
 
                             if(genesisBlockHash != atomicSwapOtherChainDetails[5]) {
                                 try {
