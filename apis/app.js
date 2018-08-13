@@ -904,12 +904,11 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
 app.post(`/assets/search`, (req, res) => {
     var query = req.body;
 
-    console.log(typeof query, query)
-
-    localDB.collection("soloAssets").find(query, function(err, result) {
+    localDB.collection("soloAssets").find(query).toArray(function(err, result) {
         if(err) {
             res.send({"error": "Search Error Occured"})
         } else {
+            console.log(result)
             res.send(result)
         }
     });
@@ -918,7 +917,7 @@ app.post(`/assets/search`, (req, res) => {
 app.post(`/streams/search`, (req, res) => {
     var query = req.body;
 
-    localDB.collection("streamsItems").find(query, function(err, result) {
+    localDB.collection("streamsItems").find(query).toArray(function(err, result) {
         if(err) {
             res.send({"error": "Search Error Occured"})
         } else {
