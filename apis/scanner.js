@@ -1178,10 +1178,10 @@ async function clearAtomicSwaps(web3, blockNumber, network) {
 
                             console.log(genesisBlockHash, atomicSwapOtherChainDetails[4])
 
-                            if(genesisBlockHash != atomicSwapOtherChainDetails[4]) {
+                            if(genesisBlockHash != atomicSwapOtherChainDetails[5]) {
                                 try {
                                     let secretDoc = await searchSecret({instanceId: network.instanceId, hash: events[count].args.hash});
-                                    consolelog(secretDoc, {instanceId: network.instanceId, hash: events[count].args.hash});
+                                    console.log(secretDoc, {instanceId: network.instanceId, hash: events[count].args.hash});
 
                                     if(secretDoc) {
                                         await claimTxn(web3, network.atomicSwapContractAddress, events[count].args.hash, secretDoc.secret);
@@ -1198,7 +1198,7 @@ async function clearAtomicSwaps(web3, blockNumber, network) {
                             let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
                             let genesisBlockHash = atomicSwap.genesisBlockHash.call();
 
-                            if(genesisBlockHash != atomicSwapOtherChainDetails[4]) {
+                            if(genesisBlockHash != atomicSwapOtherChainDetails[5]) {
                                 try {
                                     let acceptedOrder = await searchAcceptedOrder({buyerInstanceId: network.instanceId, hash: events[count].args.hash});
 
