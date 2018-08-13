@@ -806,24 +806,6 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                                                 newMin = temp;
                                             }
 
-                                            console.log(order.fromAddress,
-                                            req.body.orderId,
-                                            newMin,
-                                            order.toAssetType,
-                                            order.toAssetName,
-                                            order.toAssetId,
-                                            order.toAssetUnits,
-                                            order.toAssetParts.toString() || 0,
-                                            order.fromAssetType,
-                                            order.fromAssetName,
-                                            order.fromAssetUnits,
-                                            order.fromAssetParts.toString() || 0,
-                                            order.fromAssetId,
-                                            network.genesisBlockHash, {
-                                                from: order.toAddress,
-                                                gas: '99999999999999999'
-                                            })
-
                                             atomicSwap.lock.sendTransaction(
                                                 order.fromAddress,
                                                 req.body.orderId,
