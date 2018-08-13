@@ -130,14 +130,14 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                  gasLimit: web3.toHex(99999999999999999),
                  from: req.body.assetIssuer,
                  nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
-                 data: assets.createSoloAssetType.getData(req.body.assetName),
+                 data: assets.createSoloAssetType.getData(req.body.assetName, req.body.description || ""),
                  to: network.assetsContractAddress,
                  value: web3.toHex(0)
             };
 
             res.send([rawTx])
         } else {
-            assets.createSoloAssetType.sendTransaction(req.body.assetName, {
+            assets.createSoloAssetType.sendTransaction(req.body.assetName, req.body.description || "", {
                 from: req.body.assetIssuer,
                 gas: '99999999999999999'
             }, function(error, txnHash) {
@@ -159,7 +159,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                      gasLimit: web3.toHex(99999999999999999),
                      from: req.body.assetIssuer,
                      nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
-                     data: assets.createBulkAssetType.getData(req.body.assetName, (req.body.reissuable === "true"), req.body.parts),
+                     data: assets.createBulkAssetType.getData(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, req.body.description || ""),
                      to: network.assetsContractAddress,
                      value: web3.toHex(0)
                 };
@@ -170,7 +170,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
             if(req.body.parts > 18) {
                 res.send({"error": "Invalid parts"})
             } else {
-                assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, {
+                assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, req.body.description || "", {
                     from: req.body.assetIssuer,
                     gas: '99999999999999999'
                 }, function(error, txnHash) {
@@ -284,7 +284,7 @@ app.post(`/assets/transferSoloAsset`, (req, res) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     var assetsContract = web3.eth.contract(smartContracts.assets.abi);
     var assets = assetsContract.at(network.assetsContractAddress);
-    assets.transferOwnershipOfSoloAsset.sendTransaction(req.body.assetName, req.body.identifier, req.body.toAccount, {
+    assets.transferOwnershipOfSoloAsset.sendTransaction(req.body.assetName, req.body.identifier, req.body.toAccount, req.body.description || "", {
         from: req.body.fromAccount,
         gas: '4712388'
     }, function(error, txnHash){
@@ -303,7 +303,7 @@ app.post(`/assets/transferBulkAsset`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var parts = assets.getBulkAssetParts.call(req.body.assetName)
     let units = (new BigNumber(req.body.units)).multipliedBy(addZeros(1, parts))
-    assets.transferBulkAssetUnits.sendTransaction(req.body.assetName, req.body.toAccount, units.toString(), {
+    assets.transferBulkAssetUnits.sendTransaction(req.body.assetName, req.body.toAccount, units.toString(), req.body.description || "", {
         from: req.body.fromAccount,
         gas: '4712388'
     }, function(error, txnHash){
@@ -908,7 +908,19 @@ app.post(`/assets/search`, (req, res) => {
         if(err) {
             res.send({"error": "Search Error Occured"})
         } else {
-            console.log(result)
+            res.send(result)
+        }
+    });
+})
+
+app.post(`/assets/audit`, (req, res) => {
+    var assetName = req.body.assetName;
+    var uniqueIdentifier = req.body.uniqueIdentifier;
+
+    localDB.collection("soloAssetAudit").find({assetName: assetName, uniqueIdentifier: uniqueIdentifier}).sort({date_created: 1}).toArray(function(err, result) {
+        if(err) {
+            res.send({"error": "Search Error Occured"})
+        } else {
             res.send(result)
         }
     });
@@ -931,7 +943,7 @@ app.post(`/assets/createStream`, (req, res) => {
     var streamsContract = web3.eth.contract(smartContracts.streams.abi);
     var streams = streamsContract.at(network.streamsContractAddress);
 
-    streams.createStream.sendTransaction(req.body.streamName, {
+    streams.createStream.sendTransaction(req.body.streamName, req.body.description || "", {
         from: req.body.fromAccount,
         gas: '99999999999999999'
     }, function(error, txnHash) {
