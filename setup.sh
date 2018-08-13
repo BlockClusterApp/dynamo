@@ -2,9 +2,9 @@ if [ $# -eq 0 ]
 then
   	pkill screen
 	screen -d -m ./quorum-node.sh
-	screen -d -m bash -i -c "node ./apis/app.js | tee /dynamo/bcData/app.log"
+	screen -d -m bash -i -c "node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log"
 	sleep 10;
-    screen -d -m bash -i -c "node ./apis/init.js | tee /dynamo/bcData/init.log"
+    screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -48,9 +48,9 @@ if [ $# -eq 2 ]
 then
   	pkill screen
     screen -d -m ./quorum-node.sh $1 $2
-    screen -d -m bash -i -c 'node ./apis/app.js | tee /dynamo/bcData/app.log'
+    screen -d -m bash -i -c 'node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log'
 	sleep 10;
-    screen -d -m bash -i -c 'node ./apis/init.js | tee /dynamo/bcData/init.log'
+    screen -d -m bash -i -c 'node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log'
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -94,9 +94,9 @@ if [ $# -eq 3 ]
 then
   	pkill screen
     screen -d -m ./quorum-node.sh $1 $2 $3
-    screen -d -m bash -i -c "node ./apis/app.js | tee /dynamo/bcData/app.log"
+    screen -d -m bash -i -c "node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log"
 	sleep 10;
-    screen -d -m bash -i -c "node ./apis/init.js | tee /dynamo/bcData/init.log"
+    screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
