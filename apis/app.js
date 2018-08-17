@@ -476,9 +476,9 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
     let txns = [];
 
     if(req.body.private) {
-        let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+        let publicKey = assets.getSoloAssetDetails.call(req.body.assetName, req.body.identifier, {
             from: web3.eth.accounts[0]
-        });
+        })[2];
 
         for(let key in req.body.private) {
             let timestamp = Date.now();
@@ -540,9 +540,9 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
         3. Send BC Blockchain Txn to Notify other participant
     */
 
-    let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+    let publicKey = assets.getSoloAssetDetails.call(req.body.assetName, req.body.identifier, {
         from: web3.eth.accounts[0]
-    });
+    })[2];
 
     localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
         if(!err && keyPair) {
@@ -606,9 +606,9 @@ app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
         3. Send BC Blockchain Txn to Notify other participant
     */
 
-    let publicKey = assets.getEncryptionPublicKey.call(req.body.assetName, req.body.identifier, {
+    let publicKey = assets.getSoloAssetDetails.call(req.body.assetName, req.body.identifier, {
         from: web3.eth.accounts[0]
-    });
+    })[2];
 
     localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
         if(!err && keyPair) {
