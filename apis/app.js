@@ -346,7 +346,7 @@ app.post(`/assets/getSoloAssetInfo`, (req, res) => {
             } else if(result) {
                 res.send(result)
             } else {
-                res.send({"error": err.toString()})
+                res.send({"error": "Not Found"})
             }
         });
     } catch(e) {
