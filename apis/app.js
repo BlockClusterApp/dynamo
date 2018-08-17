@@ -1217,7 +1217,6 @@ app.post(`/utility/createAccount`, (req, res) => {
             }, function(error) {
                 if(!error) {
                     localDB.collection("bcAccounts").insertOne({
-                        "instanceId": instanceId,
                         "address": result.result,
                         "password": req.body.password,
                         "name": req.body.name || ""
@@ -1266,15 +1265,22 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     var datadir = "/dynamo/bcData/node";
     var url_parts = url.parse(req.url, true);
     var address= req.body.address;
-    const password = req.body.password;
 
-    var keyObject = keythereum.importFromFile(address, datadir);
-    var privateKey = keythereum.recover(password, keyObject);
+    localDB.collection("bcAccounts").findOne({address: address}, function(err, result) {
+        if(err) {
+            res.send({"error": err})
+        } else if(result) {
+            var keyObject = keythereum.importFromFile(address, datadir);
+            var privateKey = keythereum.recover(result.password, keyObject);
 
-    res.send({
-        "keyFile": keyObject,
-        "privateKeyString": privateKey.toString("hex"),
-        "password": password
+            res.send({
+                "keyFile": keyObject,
+                "privateKeyString": privateKey.toString("hex"),
+                "password": password
+            })
+        } else {
+            res.send({"error": "Not Found"})
+        }
     })
 })
 
