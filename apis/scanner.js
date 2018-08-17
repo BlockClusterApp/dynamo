@@ -481,7 +481,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
                             }
 
                             try {
-                                let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                let publicKeyOwner = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
                                 let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKeyOwner})
 
                                 //check if you are issuer of data
@@ -681,7 +681,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                     }
         						} else if(events[count].event === "soloAssetAccessGranted") {
                                     try {
-                                        let ownerPublicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                        let ownerPublicKey = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
                                         let keyPair = await searchEncryptionKey({compressed_public_key_hex: ownerPublicKey})
 
                                         if(keyPair) {
@@ -762,7 +762,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                     }
                                 } else if(events[count].event === "soloAssetAccessRevoked") {
                                     try {
-                                        let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                        let publicKey = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
                                         let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
 
                                         if(keyPair) {
@@ -835,7 +835,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                     }
 
                                     try {
-                                        let publicKey = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                        let publicKey = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
                                         let keyPair = await searchEncryptionKey({compressed_public_key_hex: publicKey})
                                         if(keyPair) {
                                             fetchAndWriteEncryptedData(
@@ -853,7 +853,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                                         } else {
                                             //see if you have access
                                             let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, hexToBase64(impulse.publicKey))
-                                            let publicKeyOwner = assets.getEncryptionPublicKey.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)
+                                            let publicKeyOwner = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
 
                                             if(hasAccess) {
                                                 let privateKey = impulse.privateKey;

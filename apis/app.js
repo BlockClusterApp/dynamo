@@ -538,7 +538,7 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
                             if(body.error) {
                                 res.send({"error": body.error.toString()})
                             } else {
-                                assets.soloAssetGrantAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
+                                assets.soloAssetChangeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, true, {
                                     from: req.body.fromAccount,
                                     gas: '4712388'
                                 }, function(error, txnHash){
@@ -599,7 +599,7 @@ app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
                     if(body.error) {
                         res.send({"error": body.error.toString()})
                     } else {
-                        assets.soloAssetRevokeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, {
+                        assets.soloAssetChangeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, false, {
                             from: req.body.fromAccount,
                             gas: '4712388'
                         }, function(error, txnHash){
