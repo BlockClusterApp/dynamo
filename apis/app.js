@@ -1267,11 +1267,15 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     var address= req.body.address;
 
     localDB.collection("bcAccounts").findOne({address: address}, function(err, result) {
+        console.log(err, result)
         if(err) {
             res.send({"error": err})
         } else if(result) {
+            console.log(datadir)
             var keyObject = keythereum.importFromFile(address, datadir);
             var privateKey = keythereum.recover(result.password, keyObject);
+
+            console.log(keyObject, privateKey)
 
             res.send({
                 "keyFile": keyObject,
