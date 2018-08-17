@@ -397,7 +397,9 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         })
     }
 
-    async function encryptSend(publicKey, object) {
+    let encryptedArr = [];
+
+    async function encrypt(publicKey, object) {
         return new Promise((resolve, reject) => {
             localDB.collection("encryptionKeys").findOne({compressed_public_key_hex: publicKey}, function(err, keyPair) {
                 if(!err && keyPair) {
@@ -431,28 +433,41 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
                                     if(body.error) {
                                         reject(body.error.toString())
                                     } else {
-                                        assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
-                                            from: req.body.fromAccount,
-                                            gas: '4712388'
-                                        }, function(error, txnHash){
-                                            if(error) {
-                                                reject(error.toString())
-                                            } else {
-                                                resolve(txnHash)
-                                            }
-                                        })
+                                        resolve(ciphertext_hash)
                                     }
                                 } else {
                                     reject(error.toString())
                                 }
                             })
-
                         } else {
                             reject(error.toString())
                         }
                     })
                 } else {
                     reject("You are not the owner of the private key required for signing meta data")
+                }
+            })
+        })
+    }
+
+    async function encryptSend(key, value) {
+        return new Promise((resolve, reject) => {
+
+            let ciphertext_hash = "";
+            for(var count = 0; count < encryptedArr.length; count++) {
+                ciphertext_hash = ciphertext_hash + encryptedArr[count] + "~";
+            }
+
+            ciphertext_hash = ciphertext_hash.substring(0, ciphertext_hash.length - 1);
+
+            assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
+                from: req.body.fromAccount,
+                gas: '4712388'
+            }, function(error, txnHash){
+                if(error) {
+                    reject(error.toString())
+                } else {
+                    resolve(txnHash)
                 }
             })
         })
@@ -474,25 +489,39 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
             }))
 
             try {
-                let txnHash = await encryptSend(publicKey, object)
-                txns.push(txnHash)
+                encryptedArr.push(await encrypt(publicKey, object))
             } catch(e) {
                 res.send({"error": e})
                 return;
             }
         }
+
+        try {
+            let txnHash = encryptSend();
+            txns.push(txnHash)
+        } catch(e) {
+            res.send({"error": e})
+            return;
+        }
     }
 
     if(req.body.public) {
+        let finalKey = "";
+        let finalValue = "";
         for(let key in req.body.public) {
-            try {
-                let txnHash = await send(key, req.body.public[key])
-                txns.push(txnHash)
-            } catch(e) {
-                console.log(e)
-                res.send({"error": e})
-                return;
-            }
+            finalKey = finalKey + key + "~"
+            finalValue = finalValue + req.body.public[key] + "~"
+        }
+
+        finalKey = finalKey.substring(0, finalKey.length - 1);
+        finalValue = finalValue.substring(0, finalValue.length - 1);
+
+        try {
+            let txnHash = await send(finalKey, finalValue)
+            txns.push(txnHash)
+        } catch(e) {
+            res.send({"error": e})
+            return;
         }
     }
 
