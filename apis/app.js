@@ -1454,12 +1454,42 @@ app.post(`/utility/addPeer`, async (req, res) => {
                 } catch(e) {
                     res.send({ "error": e})
                 }
-
             }
         } else {
             console.log(err)
         }
     })
+})
+
+app.post(`/contracts/addOrUpdate`, async (req, res) => {
+    let bytecode = req.body.bytecode;
+    let abi = req.body.abi;
+    let name = req.body.name;
+
+    localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
+        abi: abi,
+        bytecode: bytecode,
+        abiHash: sha3.keccak256(JSON.stringify(abi)),
+        bytecodeHash: sha3.keccak256(JSON.stringify(bytecode))
+    } }, {upsert: true, safe: false}, function(err, res) {
+        if(err) {
+            reject(err)
+        } else {
+            resolve()
+        }
+    });
+})
+
+app.get(`/contracts/search`, async (req, res) => {
+    var query = req.body;
+
+    localDB.collection("contracts").find(query).toArray(function(err, result) {
+        if(err) {
+            res.send({"error": "Search Error Occured"})
+        } else {
+            res.send(result)
+        }
+    });
 })
 
 app.listen(6382)
