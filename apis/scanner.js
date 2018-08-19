@@ -1372,6 +1372,10 @@ async function indexTxns(web3, blockNumber) {
                         }
                     });
                 })
+
+                if(txns.length === 0) {
+                    resolve()
+                }
             } else {
                 reject(error)
             }
