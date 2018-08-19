@@ -1349,6 +1349,36 @@ async function getPeers(web3) {
     })
 }
 
+let txnsHistory = [];
+
+async function indexTxns(web3, blockNumber) {
+    return new Promise((resolve, reject) => {
+        web3.eth.getBlock(blockNumber,  (error, blockDetails) => {
+            if(!error) {
+                let txns = blockDetails.transactions;
+                txns.forEach(function(txn, index) {
+                    txnsHistory.unshift(txn)
+                    if(txnsHistory.length > 100) {
+                        txnsHistory.splice(-1, 1)
+                    }
+
+                    localDB.collection("txnsHistory").updateOne({"name": "last100"}, { $set: {
+                        "txns": txnsHistory
+                    } }, {upsert: true, safe: false}, function(err, res) {
+                        if(err) {
+                            reject(err)
+                        } else {
+                            resolve()
+                        }
+                    });
+                })
+            } else {
+                reject(error)
+            }
+        })
+    })
+}
+
 MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         localDB = database.db("admin");
@@ -1403,6 +1433,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                 if(blockToScan % 5 == 0) {
                                     var peers = await getPeers(web3, node.accounts);
                                 }
+
+                                await indexTxns(web3, blockToScan)
 
                                 var set  = {};
                                 set.blockToScan = blockToScan + 1;

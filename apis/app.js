@@ -1298,6 +1298,16 @@ async function sendRawTxn(data) {
     })
 }
 
+app.get(`/transactions/last100`, async (req, res) => {
+    localDB.collection("txnsHistory").findOne({"name": "last100"}, (err, txns) => {
+        if(err) {
+            res.send({"error": err})
+        } else {
+            res.send(txns.txns)
+        }
+    })
+})
+
 app.post(`/transactions/signAndSend`, async (req, res) => {
 
     let result = [];
