@@ -268,7 +268,7 @@ app.post(`/assets/issueBulkAsset`, (req, res) => {
     var assets = assetsContract.at(network.assetsContractAddress);
     var parts = assets.getBulkAssetParts.call(req.body.assetName)
     let units = (new BigNumber(req.body.units)).multipliedBy(addZeros(1, parts))
-    assets.issueBulkAsset.sendTransaction(req.body.assetName, units.toString(), req.body.toAccount, {
+    assets.issueBulkAsset.sendTransaction(req.body.assetName, units.toString(), req.body.toAccount, req.body.description || "", {
         from: req.body.fromAccount,
         gas: '4712388'
     }, function(error, txnHash){
