@@ -455,7 +455,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
 
             let ciphertext_hash = "";
             for(var count = 0; count < encryptedArr.length; count++) {
-                ciphertext_hash = ciphertext_hash + encryptedArr[count] + "~";
+                ciphertext_hash = ciphertext_hash + encryptedArr[count] + "œ";
             }
 
             ciphertext_hash = ciphertext_hash.substring(0, ciphertext_hash.length - 1);
@@ -509,8 +509,8 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         let finalKey = "";
         let finalValue = "";
         for(let key in req.body.public) {
-            finalKey = finalKey + key + "~"
-            finalValue = finalValue + req.body.public[key] + "~"
+            finalKey = finalKey + key + "œ"
+            finalValue = finalValue + req.body.public[key] + "œ"
         }
 
         finalKey = finalKey.substring(0, finalKey.length - 1);
