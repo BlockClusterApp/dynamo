@@ -402,9 +402,9 @@ async function scanBlock(web3, blockNumber, totalSmartContracts) {
 						let isSmartContractDeploy = await fetchTxn(web3, result.transactions[count])
 						if(isSmartContractDeploy) {
 							totalSmartContracts++;
-                            await insertToTxnHistory(txns[count], "Smart Contract Deploy")
+                            await insertToTxnHistory(result.transactions[count], "Smart Contract Deploy")
 						} else {
-                            await insertToTxnHistory(txns[count], "Smart Contract Call")
+                            await insertToTxnHistory(result.transactions[count], "Smart Contract Call")
                         }
 					} catch(e) {
 						reject(e)
@@ -1405,7 +1405,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                     accountsUnlocked = true
                                 }
 
+                                console.log("Accounts Unlocked")
+
                                 var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
+
+                                console.log("Block Exists: " + blockStatus)
 
                                 if(blockStatus == true) {
                                     try {
@@ -1444,6 +1448,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                         if(peers) {
                                             set.connectedPeers = peers;
                                         }
+
+                                        console.log(set)
 
                                         try {
                                             await updateDB(instanceId, set);
