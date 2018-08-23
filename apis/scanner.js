@@ -1349,33 +1349,34 @@ async function getPeers(web3) {
     })
 }
 
-let txnsHistory = [];
+async function insertToTxnHistory(txnHash) {
+    return new Promise((resolve, reject) => {
+        localDB.collection("bcTransactions").insertOne({
+            txnHash:txnHash
+        }, function(err) {
+            if(err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        })
+    })
+}
 
 async function indexTxns(web3, blockNumber) {
     return new Promise((resolve, reject) => {
-        web3.eth.getBlock(blockNumber,  (error, blockDetails) => {
+        web3.eth.getBlock(blockNumber,  async (error, blockDetails) => {
             if(!error) {
                 let txns = blockDetails.transactions;
-                txns.forEach(function(txn, index) {
-                    txnsHistory.unshift(txn)
-                    if(txnsHistory.length > 100) {
-                        txnsHistory.splice(-1, 1)
+                txns.forEach(async function(txn, index) {
+                    try {
+                        await insertToTxnHistory(txn)
+                    } catch(error) {
+                        reject(error)
                     }
-
-                    localDB.collection("txnsHistory").updateOne({"name": "last100"}, { $set: {
-                        "txns": txnsHistory
-                    } }, {upsert: true, safe: false}, function(err, res) {
-                        if(err) {
-                            reject(err)
-                        } else {
-                            resolve()
-                        }
-                    });
                 })
 
-                if(txns.length === 0) {
-                    resolve()
-                }
+                resolve()
             } else {
                 reject(error)
             }
@@ -1386,6 +1387,7 @@ async function indexTxns(web3, blockNumber) {
 MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         localDB = database.db("admin");
+        db.createCollection("bcTransactions", { capped: true, size: 4096, max: 100 })
     } else {
         console.log(err)
     }
