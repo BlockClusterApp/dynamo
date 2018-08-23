@@ -1299,13 +1299,13 @@ async function sendRawTxn(data) {
 }
 
 app.get(`/transactions/last100`, async (req, res) => {
-    localDB.collection("txnsHistory").findOne({"name": "last100"}, (err, txns) => {
+    localDB.collection("bcTransactions").find({}).toArray(function(err, result) {
         if(err) {
             res.send({"error": err})
         } else {
-            res.send(txns.txns)
+            res.send(result)
         }
-    })
+    });
 })
 
 app.post(`/transactions/signAndSend`, async (req, res) => {
