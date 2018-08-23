@@ -1284,6 +1284,18 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     })
 })
 
+app.post(`/utility/config`, (req, res) => {
+    localDB.collection("utility").findOne({"type": "data"}, function(err, result) {
+        if(err) {
+            res.send({"error": err})
+        } else if(result) {
+            res.send(result)
+        } else {
+            res.send({"error": "Not Found"})
+        }
+    })
+})
+
 async function sendRawTxn(data) {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 

@@ -202,7 +202,7 @@ async function getTimestampOfBlock(web3, blockNumber) {
 
 async function updateDB(instanceId, set) {
     return new Promise((resolve, reject) => {
-        db.collection("networks").updateOne({instanceId: instanceId}, { $set: set }, function(err, res) {
+        localDB.collection("utility").updateOne({"type": "data"}, { $set: set }, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -377,7 +377,7 @@ async function blockExists(web3, blockNumber) {
 
 
 
-async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts) {
+async function scanBlock(web3, blockNumber, totalSmartContracts) {
 	fetchTxn = async (web3, txnHash) => {
 		return new Promise((resolve, reject) => {
 			web3.eth.getTransactionReceipt(txnHash, (error, result) => {
@@ -402,12 +402,16 @@ async function updateTotalSmartContracts(web3, blockNumber, totalSmartContracts)
 						let isSmartContractDeploy = await fetchTxn(web3, result.transactions[count])
 						if(isSmartContractDeploy) {
 							totalSmartContracts++;
-						}
+                            await insertToTxnHistory(txns[count], "Smart Contract Deploy")
+						} else {
+                            await insertToTxnHistory(txns[count], "Smart Contract Call")
+                        }
 					} catch(e) {
 						reject(e)
 						return;
 					}
 				}
+
 				resolve(totalSmartContracts)
 			} else {
 				reject(error)
@@ -1349,11 +1353,9 @@ async function getPeers(web3) {
     })
 }
 
-async function insertToTxnHistory(txnHash) {
+async function insertToTxnHistory(txnHash, type) {
     return new Promise((resolve, reject) => {
-        localDB.collection("bcTransactions").insertOne({
-            txnHash:txnHash
-        }, function(err) {
+        localDB.collection("bcTransactions").updateOne({txnHash:txnHash}, { $set: {txnHash:txnHash, type: type} }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -1363,27 +1365,6 @@ async function insertToTxnHistory(txnHash) {
     })
 }
 
-async function indexTxns(web3, blockNumber) {
-    return new Promise((resolve, reject) => {
-        web3.eth.getBlock(blockNumber,  async (error, blockDetails) => {
-            if(!error) {
-                let txns = blockDetails.transactions;
-
-                for(let count = 0; count < txns.length; count++) {
-                    try {
-                        await insertToTxnHistory(txns[count])
-                    } catch(error) {
-                        reject(error)
-                    }
-                }
-
-                resolve()
-            } else {
-                reject(error)
-            }
-        })
-    })
-}
 
 MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
@@ -1403,78 +1384,85 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         let scan = async function() {
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                 if (!err && node.status === "running") {
-                    callbackURL = node.callbackURL;
-                    let blockToScan = (node.blockToScan ? node.blockToScan : 0);
-                    let totalSmartContracts = (node.totalSmartContracts ? node.totalSmartContracts : 0);
-                    let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
+                    localDB.collection("utility").findOne({"type": "data"}, async function(err, doc) {
+                        if(!err) {
+                            let blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
+                            let totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
 
-                    try {
+                            callbackURL = node.callbackURL;
+                            let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
 
-                        if(accountsUnlocked === false) {
-                            await unlockAccounts(web3, db)
-                            accountsUnlocked = true
-                        }
-
-                        var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
-
-                        if(blockStatus == true) {
                             try {
-                                totalSmartContracts = await updateTotalSmartContracts(web3, blockToScan, totalSmartContracts)
-                                if(node.assetsContractAddress) {
-                                    await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
-                                    await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
-                                    await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
-                                    var authoritiesList = await fetchAuthoritiesList(web3)
+
+                                if(accountsUnlocked === false) {
+                                    await unlockAccounts(web3, db)
+                                    accountsUnlocked = true
                                 }
 
-                                if(node.atomicSwapContractAddress) {
-                                    await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
-                                    await clearAtomicSwaps(web3, blockToScan, node)
+                                var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
+
+                                if(blockStatus == true) {
+                                    try {
+                                        totalSmartContracts = await scanBlock(web3, blockToScan, totalSmartContracts)
+
+                                        if(node.assetsContractAddress) {
+                                            await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                            await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
+                                            await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
+                                            var authoritiesList = await fetchAuthoritiesList(web3)
+                                        }
+
+                                        if(node.atomicSwapContractAddress) {
+                                            await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
+                                            await clearAtomicSwaps(web3, blockToScan, node)
+                                        }
+
+                                        if(node.streamsContractAddress) {
+                                            await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
+                                            await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress, node.impulse)
+                                        }
+
+                                        if(blockToScan % 5 == 0) {
+                                            var peers = await getPeers(web3);
+                                        }
+
+                                        var set  = {};
+                                        set.blockToScan = blockToScan + 1;
+                                        set.totalSmartContracts = totalSmartContracts;
+                                        set.diskSize = await getSize();
+
+                                        if(authoritiesList) {
+                                            set.currentValidators = authoritiesList;
+                                        }
+
+                                        if(peers) {
+                                            set.connectedPeers = peers;
+                                        }
+
+                                        try {
+                                            await updateDB(instanceId, set);
+                                            setTimeout(scan, 100)
+                                        } catch(e) {
+                                            console.log(e)
+                                            setTimeout(scan, 100)
+                                        }
+
+                                    } catch(e) {
+                                        console.log(e)
+                                        setTimeout(scan, 1000)
+                                    }
+                                } else {
+                                    setTimeout(scan, 1000)
                                 }
-
-                                if(node.streamsContractAddress) {
-                                    await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
-                                    await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress, node.impulse)
-                                }
-
-                                if(blockToScan % 5 == 0) {
-                                    var peers = await getPeers(web3, node.accounts);
-                                }
-
-                                await indexTxns(web3, blockToScan)
-
-                                var set  = {};
-                                set.blockToScan = blockToScan + 1;
-                                set.totalSmartContracts = totalSmartContracts;
-                                set.diskSize = await getSize();
-
-                                if(authoritiesList) {
-                                    set.currentValidators = authoritiesList;
-                                }
-
-                                if(peers) {
-                                    set.connectedPeers = peers;
-                                }
-
-                                try {
-                                    await updateDB(instanceId, set);
-                                    setTimeout(scan, 100)
-                                } catch(e) {
-                                    console.log(e)
-                                    setTimeout(scan, 100)
-                                }
-
                             } catch(e) {
                                 console.log(e)
-                                setTimeout(scan, 1000)
+                                setTimeout(scan, 100)
                             }
                         } else {
-                            setTimeout(scan, 1000)
+                            console.log(err)
+                            setTimeout(scan, 100)
                         }
-                    } catch(e) {
-                        console.log(e)
-                        setTimeout(scan, 100)
-                    }
+                    })
                 } else {
                     console.log(err)
                     setTimeout(scan, 100)
