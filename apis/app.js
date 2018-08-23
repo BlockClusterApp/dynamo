@@ -1284,7 +1284,7 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
     })
 })
 
-app.post(`/utility/config`, (req, res) => {
+app.get(`/utility/config`, (req, res) => {
     localDB.collection("utility").findOne({"type": "data"}, function(err, result) {
         if(err) {
             res.send({"error": err})
