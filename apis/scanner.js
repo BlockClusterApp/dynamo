@@ -1368,13 +1368,14 @@ async function indexTxns(web3, blockNumber) {
         web3.eth.getBlock(blockNumber,  async (error, blockDetails) => {
             if(!error) {
                 let txns = blockDetails.transactions;
-                txns.forEach(async function(txn, index) {
+
+                for(let count = 0; count < txns.length; count++) {
                     try {
-                        await insertToTxnHistory(txn)
+                        await insertToTxnHistory(txns[count])
                     } catch(error) {
                         reject(error)
                     }
-                })
+                }
 
                 resolve()
             } else {
