@@ -1386,8 +1386,14 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                 if (!err && node.status === "running") {
                     localDB.collection("utility").findOne({"type": "data"}, async function(err, doc) {
                         if(!err) {
-                            let blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
-                            let totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
+
+                            let blockToScan = 0;
+                            let totalSmartContracts = 0;
+
+                            if(doc) {
+                                blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
+                                totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
+                            }
 
                             callbackURL = node.callbackURL;
                             let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
