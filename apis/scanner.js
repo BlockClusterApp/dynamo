@@ -202,7 +202,7 @@ async function getTimestampOfBlock(web3, blockNumber) {
 
 async function updateDB(instanceId, set) {
     return new Promise((resolve, reject) => {
-        localDB.collection("utility").updateOne({"type": "data"}, { $set: set }, function(err, res) {
+        localDB.collection("utility").updateOne({"type": "data"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
