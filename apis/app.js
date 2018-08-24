@@ -1386,6 +1386,17 @@ async function updateNetwork(set) {
     })
 }
 
+async function upsertNetworkInfo(set) {
+    return new Promise((resolve, reject) => {
+        localDB.collection("nodeData").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+            if(err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        });
+    })
+}
 
 
 async function adminAddPeer(url) {
@@ -1413,11 +1424,11 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
 
     let url = req.body.url;
 
-    db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
+    localDB.collection("nodeData").findOne({"type": "scanData"}, function(err, result) {
         if(!err) {
             let whitelistedNodes;
-            if(node.whitelistedNodes) {
-                whitelistedNodes = node.whitelistedNodes;
+            if(result.whitelistedNodes) {
+                whitelistedNodes = result.whitelistedNodes;
             } else {
                 whitelistedNodes = []
             }
@@ -1430,7 +1441,7 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
                 try {
                     await clearFile("/dynamo/bcData/node/permissioned-nodes.json")
                     await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
-                    await updateNetwork(instanceId, {
+                    await upsertNetworkInfo({
                         whitelistedNodes: whitelistedNodes
                     })
 
@@ -1449,11 +1460,11 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
 app.post(`/utility/addPeer`, async (req, res) => {
     let url = req.body.url;
 
-    db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
+    localDB.collection("nodeData").findOne({"type": "scanData"}, function(err, result) {
         if(!err) {
             let staticPeers;
-            if(node.staticPeers) {
-                staticPeers = node.staticPeers;
+            if(result.staticPeers) {
+                staticPeers = result.staticPeers;
             } else {
                 staticPeers = []
             }
@@ -1467,7 +1478,7 @@ app.post(`/utility/addPeer`, async (req, res) => {
                     await clearFile("/dynamo/bcData/node/static-nodes.json")
                     await writeFile("/dynamo/bcData/node/static-nodes.json", JSON.stringify(staticPeers))
                     await adminAddPeer(url)
-                    await updateNetwork(instanceId, {
+                    await upsertNetworkInfo({
                         staticPeers: staticPeers
                     })
 

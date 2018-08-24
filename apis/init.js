@@ -52,7 +52,17 @@ async function upsertNetwork(query, set) {
 }
 
 
-
+async function upsertNetworkInfo(set) {
+    return new Promise((resolve, reject) => {
+        localDB.collection("nodeData").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+            if(err) {
+                reject(err)
+            } else {
+                resolve()
+            }
+        });
+    })
+}
 
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
@@ -158,22 +168,23 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                     await upsertNetwork({
                                                                                                         instanceId: instanceId,
                                                                                                     }, {
-                                                                                                        "assetsContractAddress": process.env.assetsContractAddress,
-                                                                                                        "atomicSwapContractAddress": process.env.atomicSwapContractAddress,
-                                                                                                        "streamsContractAddress": process.env.streamsContractAddress,
+                                                                                                        "status": "running",
                                                                                                         "genesisBlockHash": block.hash,
                                                                                                         "genesisBlock": genesis,
-                                                                                                        "nodeKey": nodekey,
-                                                                                                        "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
-                                                                                                        "nodeId": nodeId,
-                                                                                                        "currentValidators": currentValidators,
-                                                                                                        "status": "running",
                                                                                                         "impulse": {
                                                                                                             privateKey: private_key_hex,
                                                                                                             publicKey: compressed_public_key_hex
                                                                                                         },
+                                                                                                        "nodeId": nodeId,
+                                                                                                        "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
+                                                                                                        "assetsContractAddress": process.env.assetsContractAddress,
+                                                                                                        "atomicSwapContractAddress": process.env.atomicSwapContractAddress,
+                                                                                                        "streamsContractAddress": process.env.streamsContractAddress
+                                                                                                    })
+
+                                                                                                    await upsertNetworkInfo({
                                                                                                         "staticPeers": JSON.parse(staticNodes),
-                                                                                                        "whitelistedNodes": JSON.parse(permissionedNodes)
+                                                                                                        "whitelistedNodes": JSON.parse(permissionedNodes),
                                                                                                     })
                                                                                                 }
                                                                                             })
@@ -235,14 +246,16 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                                                                                                             "nodeKey": nodekey,
                                                                                                                                             "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
                                                                                                                                             "nodeId": nodeId,
-                                                                                                                                            "currentValidators": currentValidators,
                                                                                                                                             "status": "running",
                                                                                                                                             "impulse": {
                                                                                                                                                 privateKey: private_key_hex,
                                                                                                                                                 publicKey: compressed_public_key_hex
-                                                                                                                                            },
+                                                                                                                                            }
+                                                                                                                                        })
+
+                                                                                                                                        await upsertNetworkInfo({
                                                                                                                                             "staticPeers": JSON.parse(staticNodes),
-                                                                                                                                            "whitelistedNodes": JSON.parse(permissionedNodes)
+                                                                                                                                            "whitelistedNodes": JSON.parse(permissionedNodes),
                                                                                                                                         })
                                                                                                                                     }
                                                                                                                                 })
