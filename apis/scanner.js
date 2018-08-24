@@ -200,7 +200,7 @@ async function getTimestampOfBlock(web3, blockNumber) {
     })
 }
 
-async function updateDB(instanceId, set) {
+async function updateDB(set) {
     return new Promise((resolve, reject) => {
         localDB.collection("nodeData").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
@@ -1380,23 +1380,27 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                 let accountsUnlocked = false;
                 let instanceId = process.env.instanceId;
                 let scan = async function() {
+                    console.log("Scan started")
                     db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                         if (!err && node.status === "running") {
+                            console.log("Got node running")
                             localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, doc) {
                                 if(!err) {
 
-                                    let blockToScan = 0;
-                                    let totalSmartContracts = 0;
-
-                                    if(doc) {
-                                        blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
-                                        totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
-                                    }
-
-                                    callbackURL = node.callbackURL;
-                                    let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
+                                    console.log("Got node data")
 
                                     try {
+
+                                        let blockToScan = 0;
+                                        let totalSmartContracts = 0;
+
+                                        if(doc) {
+                                            blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
+                                            totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
+                                        }
+
+                                        callbackURL = node.callbackURL;
+                                        let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
 
                                         if(accountsUnlocked === false) {
                                             await unlockAccounts(web3, db)
@@ -1443,8 +1447,10 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                     set.connectedPeers = peers;
                                                 }
 
+                                                console.log(set)
+
                                                 try {
-                                                    await updateDB(instanceId, set);
+                                                    await updateDB(set);
                                                     setTimeout(scan, 100)
                                                 } catch(e) {
                                                     console.log(e)
