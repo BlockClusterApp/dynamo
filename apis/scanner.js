@@ -1380,15 +1380,10 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                 let accountsUnlocked = false;
                 let instanceId = process.env.instanceId;
                 let scan = async function() {
-                    console.log("Scan started")
                     db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                         if (!err && node.status === "running") {
-                            console.log("Got node running")
                             localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, doc) {
                                 if(!err) {
-
-                                    console.log("Got node data")
-
                                     try {
 
                                         let blockToScan = 0;
@@ -1446,8 +1441,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                 if(peers) {
                                                     set.connectedPeers = peers;
                                                 }
-
-                                                console.log(set)
 
                                                 try {
                                                     await updateDB(set);
