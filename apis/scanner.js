@@ -202,7 +202,7 @@ async function getTimestampOfBlock(web3, blockNumber) {
 
 async function updateDB(instanceId, set) {
     return new Promise((resolve, reject) => {
-        localDB.collection("utility").updateOne({"type": "data"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("utility").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -1384,7 +1384,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         let scan = async function() {
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                 if (!err && node.status === "running") {
-                    localDB.collection("utility").findOne({"type": "data"}, async function(err, doc) {
+                    localDB.collection("utility").findOne({"type": "scanData"}, async function(err, doc) {
                         if(!err) {
 
                             let blockToScan = 0;
@@ -1405,11 +1405,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                     accountsUnlocked = true
                                 }
 
-                                console.log("Accounts Unlocked")
-
                                 var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
-
-                                console.log("Block Exists: " + blockStatus)
 
                                 if(blockStatus == true) {
                                     try {
@@ -1448,8 +1444,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                         if(peers) {
                                             set.connectedPeers = peers;
                                         }
-
-                                        console.log(set)
 
                                         try {
                                             await updateDB(instanceId, set);

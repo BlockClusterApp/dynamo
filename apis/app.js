@@ -1285,7 +1285,7 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
 })
 
 app.get(`/utility/config`, (req, res) => {
-    localDB.collection("utility").findOne({"type": "data"}, function(err, result) {
+    localDB.collection("utility").findOne({"type": "scanData"}, function(err, result) {
         if(err) {
             res.send({"error": err})
         } else if(result) {
