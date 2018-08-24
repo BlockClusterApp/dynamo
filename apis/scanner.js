@@ -1366,117 +1366,117 @@ async function insertToTxnHistory(txnHash, type) {
 }
 
 
-MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
-    if(!err) {
-        localDB = database.db("admin");
-        db.createCollection("bcTransactions", { capped: true, size: 4096, max: 100 })
-    } else {
-        console.log(err)
-    }
-})
 
 //MongoClient.connect("mongodb://127.0.0.1:3001", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
 MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
     if(!err) {
         db = database.db(Config.getDatabase());
-        let accountsUnlocked = false;
-        let instanceId = process.env.instanceId;
-        let scan = async function() {
-            db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
-                if (!err && node.status === "running") {
-                    localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, doc) {
-                        if(!err) {
 
-                            let blockToScan = 0;
-                            let totalSmartContracts = 0;
+        MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
+            if(!err) {
+                localDB = database.db("admin");
+                db.createCollection("bcTransactions", { capped: true, size: 4096, max: 100 })
 
-                            if(doc) {
-                                blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
-                                totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
-                            }
+                let accountsUnlocked = false;
+                let instanceId = process.env.instanceId;
+                let scan = async function() {
+                    db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
+                        if (!err && node.status === "running") {
+                            localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, doc) {
+                                if(!err) {
 
-                            callbackURL = node.callbackURL;
-                            let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
+                                    let blockToScan = 0;
+                                    let totalSmartContracts = 0;
 
-                            try {
+                                    if(doc) {
+                                        blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
+                                        totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
+                                    }
 
-                                if(accountsUnlocked === false) {
-                                    await unlockAccounts(web3, db)
-                                    accountsUnlocked = true
-                                }
+                                    callbackURL = node.callbackURL;
+                                    let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
 
-                                var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
-
-                                if(blockStatus == true) {
                                     try {
-                                        totalSmartContracts = await scanBlock(web3, blockToScan, totalSmartContracts)
 
-                                        if(node.assetsContractAddress) {
-                                            await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
-                                            await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
-                                            await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
-                                            var authoritiesList = await fetchAuthoritiesList(web3)
+                                        if(accountsUnlocked === false) {
+                                            await unlockAccounts(web3, db)
+                                            accountsUnlocked = true
                                         }
 
-                                        if(node.atomicSwapContractAddress) {
-                                            await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
-                                            await clearAtomicSwaps(web3, blockToScan, node)
+                                        var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
+
+                                        if(blockStatus == true) {
+                                            try {
+                                                totalSmartContracts = await scanBlock(web3, blockToScan, totalSmartContracts)
+
+                                                if(node.assetsContractAddress) {
+                                                    await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                                                    await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
+                                                    await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
+                                                    var authoritiesList = await fetchAuthoritiesList(web3)
+                                                }
+
+                                                if(node.atomicSwapContractAddress) {
+                                                    await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
+                                                    await clearAtomicSwaps(web3, blockToScan, node)
+                                                }
+
+                                                if(node.streamsContractAddress) {
+                                                    await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
+                                                    await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress, node.impulse)
+                                                }
+
+                                                if(blockToScan % 5 == 0) {
+                                                    var peers = await getPeers(web3);
+                                                }
+
+                                                var set  = {};
+                                                set.blockToScan = blockToScan + 1;
+                                                set.totalSmartContracts = totalSmartContracts;
+                                                set.diskSize = await getSize();
+
+                                                if(authoritiesList) {
+                                                    set.currentValidators = authoritiesList;
+                                                }
+
+                                                if(peers) {
+                                                    set.connectedPeers = peers;
+                                                }
+
+                                                try {
+                                                    await updateDB(instanceId, set);
+                                                    setTimeout(scan, 100)
+                                                } catch(e) {
+                                                    console.log(e)
+                                                    setTimeout(scan, 100)
+                                                }
+
+                                            } catch(e) {
+                                                console.log(e)
+                                                setTimeout(scan, 1000)
+                                            }
+                                        } else {
+                                            setTimeout(scan, 1000)
                                         }
-
-                                        if(node.streamsContractAddress) {
-                                            await updateStreamsList(web3, blockToScan, node.instanceId, node.streamsContractAddress)
-                                            await indexStreams(web3, blockToScan, node.instanceId, node.streamsContractAddress, node.impulse)
-                                        }
-
-                                        if(blockToScan % 5 == 0) {
-                                            var peers = await getPeers(web3);
-                                        }
-
-                                        var set  = {};
-                                        set.blockToScan = blockToScan + 1;
-                                        set.totalSmartContracts = totalSmartContracts;
-                                        set.diskSize = await getSize();
-
-                                        if(authoritiesList) {
-                                            set.currentValidators = authoritiesList;
-                                        }
-
-                                        if(peers) {
-                                            set.connectedPeers = peers;
-                                        }
-
-                                        try {
-                                            await updateDB(instanceId, set);
-                                            setTimeout(scan, 100)
-                                        } catch(e) {
-                                            console.log(e)
-                                            setTimeout(scan, 100)
-                                        }
-
                                     } catch(e) {
                                         console.log(e)
-                                        setTimeout(scan, 1000)
+                                        setTimeout(scan, 100)
                                     }
                                 } else {
-                                    setTimeout(scan, 1000)
+                                    console.log(err)
+                                    setTimeout(scan, 100)
                                 }
-                            } catch(e) {
-                                console.log(e)
-                                setTimeout(scan, 100)
-                            }
+                            })
                         } else {
                             console.log(err)
                             setTimeout(scan, 100)
                         }
-                    })
-                } else {
-                    console.log(err)
-                    setTimeout(scan, 100)
+                    });
                 }
-            });
-        }
 
-        setTimeout(scan, 100)
+                setTimeout(scan, 100)
+            }
+        })
     }
 });
 
