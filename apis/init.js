@@ -184,7 +184,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                                                                                     await upsertNetworkInfo({
                                                                                                         "staticPeers": JSON.parse(staticNodes),
-                                                                                                        "whitelistedNodes": JSON.parse(permissionedNodes),
+                                                                                                        "whitelistedNodes": JSON.parse(permissionedNodes)
                                                                                                     })
                                                                                                 }
                                                                                             })
@@ -255,7 +255,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                                                                                                                         await upsertNetworkInfo({
                                                                                                                                             "staticPeers": JSON.parse(staticNodes),
-                                                                                                                                            "whitelistedNodes": JSON.parse(permissionedNodes),
+                                                                                                                                            "whitelistedNodes": JSON.parse(permissionedNodes)
                                                                                                                                         })
                                                                                                                                     }
                                                                                                                                 })
