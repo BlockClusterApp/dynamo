@@ -1375,7 +1375,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         MongoClient.connect("mongodb://localhost:27017", {reconnectTries : Number.MAX_VALUE, autoReconnect : true}, function(err, database) {
             if(!err) {
                 localDB = database.db("admin");
-                db.createCollection("bcTransactions", { capped: true, size: 4096, max: 100 })
+                localDB.createCollection("bcTransactions", { capped: true, size: 4096, max: 100 })
 
                 let accountsUnlocked = false;
                 let instanceId = process.env.instanceId;
@@ -1475,8 +1475,12 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                 }
 
                 setTimeout(scan, 100)
+            } else {
+                console.log(err)
             }
         })
+    } else {
+        console.log(err)
     }
 });
 
