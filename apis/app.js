@@ -1248,9 +1248,20 @@ app.get(`/utility/accounts`, (req, res) => {
 app.get(`/utility/nodeInfo`, (req, res) => {
     var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
     var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
-    res.send({
-        "genesis": genesis,
-        "nodekey": nodekey
+
+    localDB.collection("nodeData").findOne({"type": "scanData"}, function(err, result) {
+        if(err) {
+            res.send({"error": err})
+        } else if(result) {
+            result.genesis = genesis;
+            result.nodekey = nodekey;
+            res.send(result)
+        } else {
+            res.send({
+                "genesis": genesis,
+                "nodekey": nodekey
+            })
+        }
     })
 })
 
@@ -1278,18 +1289,6 @@ app.post(`/utility/getPrivateKey`, (req, res) => {
                 "privateKeyString": privateKey.toString("hex"),
                 "password": result.password
             })
-        } else {
-            res.send({"error": "Not Found"})
-        }
-    })
-})
-
-app.get(`/utility/config`, (req, res) => {
-    localDB.collection("utility").findOne({"type": "scanData"}, function(err, result) {
-        if(err) {
-            res.send({"error": err})
-        } else if(result) {
-            res.send(result)
         } else {
             res.send({"error": "Not Found"})
         }

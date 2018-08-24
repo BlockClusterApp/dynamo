@@ -202,7 +202,7 @@ async function getTimestampOfBlock(web3, blockNumber) {
 
 async function updateDB(instanceId, set) {
     return new Promise((resolve, reject) => {
-        localDB.collection("utility").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
+        localDB.collection("nodeData").updateOne({"type": "scanData"}, { $set: set }, {upsert: true, safe: false}, function(err, res) {
             if(err) {
                 reject(err)
             } else {
@@ -1384,7 +1384,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
         let scan = async function() {
             db.collection("networks").findOne({instanceId: instanceId}, async function(err, node) {
                 if (!err && node.status === "running") {
-                    localDB.collection("utility").findOne({"type": "scanData"}, async function(err, doc) {
+                    localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, doc) {
                         if(!err) {
 
                             let blockToScan = 0;
