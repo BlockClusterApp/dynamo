@@ -1424,7 +1424,7 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
 
     let url = req.body.url;
 
-    localDB.collection("nodeData").findOne({"type": "scanData"}, function(err, result) {
+    localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, result) {
         if(!err) {
             let whitelistedNodes;
             if(result.whitelistedNodes) {
@@ -1460,7 +1460,7 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
 app.post(`/utility/addPeer`, async (req, res) => {
     let url = req.body.url;
 
-    localDB.collection("nodeData").findOne({"type": "scanData"}, function(err, result) {
+    localDB.collection("nodeData").findOne({"type": "scanData"}, async function(err, result) {
         if(!err) {
             let staticPeers;
             if(result.staticPeers) {
