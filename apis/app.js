@@ -1336,7 +1336,7 @@ app.get(`/transactions/audit`, async (req, res) => {
                                     if(err) {
                                         res.send({"error": "Search Error Occured"})
                                     } else {
-                                        for(let count == 0; count < result.length; count++) {
+                                        for(let count = 0; count < result.length; count++) {
                                             if(result[count].bytecode.includes(code.substring(2))) {
                                                 res.send({"success": "Found"})
                                                 return;
