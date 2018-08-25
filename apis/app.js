@@ -1330,33 +1330,39 @@ app.get(`/transactions/audit`, async (req, res) => {
                 if(!error && result2 != null) {
                     if(result2.to) {
                         //contract call
-                        web3.eth.getCode(result2.to, web3.eth.defaultBlock, (code) => {
-                            let bytecodeHash = sha3.keccak256(code)
-                            console.log(code)
-                            console.log(bytecodeHash)
+                        web3.eth.getCode(result2.to, "latest", (err, code) => {
+                            if(!err) {
+                                console.log(code)
+                                console.log(sha3.keccak256(code))
+                                let bytecodeHash = sha3.keccak256(code)
 
-                            localDB.collection("contracts").findOne({"bytecodeHash": bytecodeHash}, function(err, contract) {
-                                if(!err && contract) {
-                                    res.send({result: "Working"})
-                                } else {
-                                    res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
-                                }
-                            })
 
-                            /*
-                            localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
-                                abi: abi,
-                                bytecode: bytecode,
-                                abiHash: sha3.keccak256(JSON.stringify(abi)),
-                                bytecodeHash: sha3.keccak256(bytecode)
-                            } }, {upsert: true, safe: false}, function(err, res) {
-                                if(err) {
-                                    reject(err)
-                                } else {
-                                    resolve()
-                                }
-                            });
-                            */
+                                localDB.collection("contracts").findOne({"bytecodeHash": bytecodeHash}, function(err, contract) {
+                                    if(!err && contract) {
+                                        res.send({result: "Working"})
+                                    } else {
+                                        res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
+                                    }
+                                })
+
+                                /*
+                                localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
+                                    abi: abi,
+                                    bytecode: bytecode,
+                                    abiHash: sha3.keccak256(JSON.stringify(abi)),
+                                    bytecodeHash: sha3.keccak256(bytecode)
+                                } }, {upsert: true, safe: false}, function(err, res) {
+                                    if(err) {
+                                        reject(err)
+                                    } else {
+                                        resolve()
+                                    }
+                                });
+                                */
+                            } else {
+                                console.log(err)
+                            }
+
                         })
                     } else {
                         //contract creation
