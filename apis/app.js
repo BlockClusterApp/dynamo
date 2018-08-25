@@ -1319,6 +1319,57 @@ app.get(`/transactions/last100`, async (req, res) => {
     });
 })
 
+app.get(`/transactions/audit`, async (req, res) => {
+    let txnHash = req.query.hash;
+    let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    web3.eth.getTransaction(txnHash, (error, result1) => {
+        console.log(result1)
+        if(!error && result1 != null) {
+            web3.eth.getTransactionReceipt(txnHash, (error, result2) => {
+                console.log(result2)
+                if(!error && result2 != null) {
+                    if(result2.to) {
+                        //contract call
+                        web3.eth.getCode(result2.to, web3.eth.defaultBlock, (code) => {
+                            let bytecodeHash: sha3.keccak256(code)
+                            console.log(code)
+                            console.log(bytecodeHash)
+
+                            localDB.collection("contracts").findOne({"bytecodeHash": bytecodeHash}, function(err, contract) {
+                                if(!err && contract) {
+                                    res.send({result: "Working"})
+                                } else {
+                                    res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
+                                }
+                            })
+
+                            /*
+                            localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
+                                abi: abi,
+                                bytecode: bytecode,
+                                abiHash: sha3.keccak256(JSON.stringify(abi)),
+                                bytecodeHash: sha3.keccak256(bytecode)
+                            } }, {upsert: true, safe: false}, function(err, res) {
+                                if(err) {
+                                    reject(err)
+                                } else {
+                                    resolve()
+                                }
+                            });
+                            */
+                        })
+                    } else {
+                        //contract creation
+
+                    }
+                } else {
+
+                }
+            })
+        }
+    })
+})
+
 app.post(`/transactions/signAndSend`, async (req, res) => {
 
     let result = [];
@@ -1498,11 +1549,16 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
     let abi = req.body.abi;
     let name = req.body.name;
 
+    console.log({name: req.body.name}, {
+        abiHash: sha3.keccak256(JSON.stringify(abi)),
+        bytecodeHash: sha3.keccak256(bytecode)
+    })
+
     localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
         abi: abi,
         bytecode: bytecode,
         abiHash: sha3.keccak256(JSON.stringify(abi)),
-        bytecodeHash: sha3.keccak256(JSON.stringify(bytecode))
+        bytecodeHash: sha3.keccak256(bytecode)
     } }, {upsert: true, safe: false}, function(err, res) {
         if(err) {
             reject(err)
