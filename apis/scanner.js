@@ -377,7 +377,7 @@ async function blockExists(web3, blockNumber) {
 
 
 
-async function scanBlock(web3, blockNumber, totalSmartContracts) {
+async function scanBlock(web3, blockNumber, totalSmartContracts, totalTransactions) {
 	fetchTxn = async (web3, txnHash) => {
 		return new Promise((resolve, reject) => {
 			web3.eth.getTransactionReceipt(txnHash, (error, result) => {
@@ -412,7 +412,7 @@ async function scanBlock(web3, blockNumber, totalSmartContracts) {
 					}
 				}
 
-				resolve(totalSmartContracts)
+				resolve(totalSmartContracts, result.transactions.length + totalTransactions)
 			} else {
 				reject(error)
 			}
@@ -1330,7 +1330,7 @@ async function getSize() {
         request(`http://127.0.0.1:6382/utility/size`, { json: false }, (err, res, body) => {
             if (err) { reject(err) }
             else {
-                resolve({gethSize: JSON.parse(body).size})
+                resolve({size: JSON.parse(body).size})
             }
         });
     })
@@ -1392,6 +1392,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                         if(doc) {
                                             blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
                                             totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
+                                            totalTransactions = (doc.totalTransactions ? doc.totalTransactions : 0);
                                         }
 
                                         callbackURL = node.callbackURL;
@@ -1406,7 +1407,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                         if(blockStatus == true) {
                                             try {
-                                                totalSmartContracts = await scanBlock(web3, blockToScan, totalSmartContracts)
+                                                totalSmartContracts, totalTransactions = await scanBlock(web3, blockToScan, totalSmartContracts, totalTransactions)
 
                                                 if(node.assetsContractAddress) {
                                                     await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
@@ -1432,6 +1433,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                                 var set  = {};
                                                 set.blockToScan = blockToScan + 1;
                                                 set.totalSmartContracts = totalSmartContracts;
+                                                set.totalTransactions = totalTransactions;
                                                 set.diskSize = await getSize();
 
                                                 if(authoritiesList) {
