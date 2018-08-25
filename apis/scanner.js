@@ -412,7 +412,7 @@ async function scanBlock(web3, blockNumber, totalSmartContracts, totalTransactio
 					}
 				}
 
-				resolve(totalSmartContracts, result.transactions.length + totalTransactions)
+				resolve({totalSmartContracts: totalSmartContracts, totalTransactions: result.transactions.length + totalTransactions})
 			} else {
 				reject(error)
 			}
@@ -1407,7 +1407,9 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
 
                                         if(blockStatus == true) {
                                             try {
-                                                totalSmartContracts, totalTransactions = await scanBlock(web3, blockToScan, totalSmartContracts, totalTransactions)
+                                                let total = await scanBlock(web3, blockToScan, totalSmartContracts, totalTransactions)
+                                                totalSmartContracts = total.totalSmartContracts;
+                                                totalTransactions = total.totalTransactions; 
 
                                                 if(node.assetsContractAddress) {
                                                     await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
