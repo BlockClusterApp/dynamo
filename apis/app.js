@@ -1335,7 +1335,7 @@ app.get(`/transactions/audit`, async (req, res) => {
                                 let bytecodeHash = sha3.keccak256(code)
 
                                 console.log({text: {
-                                    $search: code.substring(2);
+                                    $search: code.substring(2)
                                 }})
 
                                 localDB.collection("contracts").find({text: {
