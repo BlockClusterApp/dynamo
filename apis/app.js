@@ -1339,7 +1339,7 @@ app.get(`/transactions/audit`, async (req, res) => {
                                 }})
 
                                 localDB.collection("contracts").find({text: {
-                                    $search: code.substring(2);
+                                    $search: code.substring(2)
                                 }}).toArray(function(err, result) {
                                     if(err) {
                                         res.send({"error": "Search Error Occured"})
