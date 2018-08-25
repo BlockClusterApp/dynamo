@@ -1332,18 +1332,22 @@ app.get(`/transactions/audit`, async (req, res) => {
                         //contract call
                         web3.eth.getCode(result2.to, "latest", (err, code) => {
                             if(!err) {
-                                console.log(code)
-                                console.log(sha3.keccak256(code))
                                 let bytecodeHash = sha3.keccak256(code)
 
+                                console.log({text: {
+                                    $search: code.substring(2);
+                                }})
 
-                                localDB.collection("contracts").findOne({"bytecodeHash": bytecodeHash}, function(err, contract) {
-                                    if(!err && contract) {
-                                        res.send({result: "Working"})
+                                localDB.collection("contracts").find({text: {
+                                    $search: code.substring(2);
+                                }}).toArray(function(err, result) {
+                                    if(err) {
+                                        res.send({"error": "Search Error Occured"})
                                     } else {
-                                        res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
+                                        res.send(result)
                                     }
-                                })
+                                });
+
 
                                 /*
                                 localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
@@ -1554,11 +1558,6 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
     let bytecode = req.body.bytecode;
     let abi = req.body.abi;
     let name = req.body.name;
-
-    console.log({name: req.body.name}, {
-        abiHash: sha3.keccak256(JSON.stringify(abi)),
-        bytecodeHash: sha3.keccak256(bytecode)
-    })
 
     localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
         abi: abi,

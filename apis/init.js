@@ -72,6 +72,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
             if(!err) {
                 localDB = database.db("admin");
 
+                localDB.collection("contracts").createIndex({ bytecode: "text" })
+
                 //deploy contracts and create nodes
                 let deployInitNode = function() {
                     db.collection("networks").findOne({instanceId: instanceId}, function(err, node) {
@@ -87,8 +89,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
                                     bytecodeHash: sha3.keccak256(JSON.stringify(smartContracts.assets.bytecode))
                                 } }, {upsert: true, safe: false}, function(err, res) {
                                     if(!err) {
-
-
                                         localDB.collection("contracts").updateOne({name: "Streams"}, { $set: {
                                             abi: smartContracts.streams.abi,
                                             bytecode: smartContracts.streams.bytecode,
