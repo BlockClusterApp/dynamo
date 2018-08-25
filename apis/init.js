@@ -72,8 +72,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {reconnectTries : Number.
             if(!err) {
                 localDB = database.db("admin");
 
-                localDB.collection("contracts").createIndex({ bytecode: "text" })
-
                 //deploy contracts and create nodes
                 let deployInitNode = function() {
                     db.collection("networks").findOne({instanceId: instanceId}, function(err, node) {

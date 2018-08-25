@@ -1332,16 +1332,18 @@ app.get(`/transactions/audit`, async (req, res) => {
                         //contract call
                         web3.eth.getCode(result2.to, "latest", (err, code) => {
                             if(!err) {
-                                let bytecodeHash = sha3.keccak256(code)
-
-                                localDB.collection("contracts").find({"$text": {
-                                    "$search": code.substring(2)
-                                }}).toArray(function(err, result) {
+                                localDB.collection("contracts").find({}).toArray(function(err, result) {
                                     if(err) {
-                                        console.log(err)
                                         res.send({"error": "Search Error Occured"})
                                     } else {
-                                        res.send(result)
+                                        for(let count == 0; count < result.length; count++) {
+                                            if(result[count].bytecode.includes(code.substring(2))) {
+                                                res.send({"success": "Found"})
+                                                return;
+                                            }
+                                        }
+
+                                        res.send({"error": "Not Found"})
                                     }
                                 });
 
