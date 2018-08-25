@@ -1330,7 +1330,7 @@ async function getSize() {
         request(`http://127.0.0.1:6382/utility/size`, { json: false }, (err, res, body) => {
             if (err) { reject(err) }
             else {
-                resolve({size: JSON.parse(body).size})
+                resolve(JSON.parse(body).size)
             }
         });
     })
