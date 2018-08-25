@@ -1331,7 +1331,7 @@ app.get(`/transactions/audit`, async (req, res) => {
                     if(result2.to) {
                         //contract call
                         web3.eth.getCode(result2.to, web3.eth.defaultBlock, (code) => {
-                            let bytecodeHash: sha3.keccak256(code)
+                            let bytecodeHash = sha3.keccak256(code)
                             console.log(code)
                             console.log(bytecodeHash)
 
