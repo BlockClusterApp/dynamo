@@ -1334,14 +1334,11 @@ app.get(`/transactions/audit`, async (req, res) => {
                             if(!err) {
                                 let bytecodeHash = sha3.keccak256(code)
 
-                                console.log({text: {
-                                    $search: code.substring(2)
-                                }})
-
-                                localDB.collection("contracts").find({text: {
-                                    $search: code.substring(2)
+                                localDB.collection("contracts").find({"$text": {
+                                    "$search": code.substring(2)
                                 }}).toArray(function(err, result) {
                                     if(err) {
+                                        console.log(err)
                                         res.send({"error": "Search Error Occured"})
                                     } else {
                                         res.send(result)
