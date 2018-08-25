@@ -1266,9 +1266,9 @@ app.get(`/utility/nodeInfo`, (req, res) => {
 })
 
 app.get(`/utility/size`, async (req, res) => {
-    var gethSize = await getDirSize("/dynamo/bcData/node");
+    var size = await getDirSize("/dynamo/bcData/");
     res.send({
-        "gethSize": gethSize
+        "size": size
     })
 })
 
