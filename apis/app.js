@@ -24,6 +24,7 @@ var btoa = require('btoa');
 var atob = require('atob');
 const EthereumTx = require('ethereumjs-tx')
 const EthereumUtil = require('ethereumjs-util')
+var abiDecoder = require('abi-decoder');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -1323,10 +1324,8 @@ app.get(`/transactions/audit`, async (req, res) => {
     let txnHash = req.query.hash;
     let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     web3.eth.getTransaction(txnHash, (error, result1) => {
-        console.log(result1)
         if(!error && result1 != null) {
             web3.eth.getTransactionReceipt(txnHash, (error, result2) => {
-                console.log(result2)
                 if(!error && result2 != null) {
                     if(result2.to) {
                         //contract call
@@ -1334,47 +1333,49 @@ app.get(`/transactions/audit`, async (req, res) => {
                             if(!err) {
                                 localDB.collection("contracts").find({}).toArray(function(err, result) {
                                     if(err) {
-                                        res.send({"error": "Search Error Occured"})
+                                        res.send({"error": "Unknown Error Occured"})
                                     } else {
                                         for(let count = 0; count < result.length; count++) {
+                                            //the bytecode returned by geth is different than the bytecode uploaded.
+                                            //returned bytecode works as a subset of uploaded bytecode
                                             if(result[count].bytecode.includes(code.substring(2))) {
-                                                res.send({"success": "Found"})
+                                                abiDecoder.addABI(result[count].abi);
+
+                                                let decodedData = abiDecoder.decodeMethod(result1.input);
+                                                if(decodedData !== undefined) {
+                                                    result1.decodedinput = decodedData
+                                                }
+
+                                                if(result2.logs.length > 0) {
+                                                    let decodedLogs = abiDecoder.decodeLogs(result2.logs);
+
+                                                    if(decodedLogs[0] !== undefined) {
+                                                        result2.decodedLogs = decodedLogs
+                                                    }
+                                                }
+
+                                                res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
                                                 return;
                                             }
                                         }
 
-                                        res.send({"error": "Not Found"})
+                                        res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
                                     }
                                 });
-
-
-                                /*
-                                localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
-                                    abi: abi,
-                                    bytecode: bytecode,
-                                    abiHash: sha3.keccak256(JSON.stringify(abi)),
-                                    bytecodeHash: sha3.keccak256(bytecode)
-                                } }, {upsert: true, safe: false}, function(err, res) {
-                                    if(err) {
-                                        reject(err)
-                                    } else {
-                                        resolve()
-                                    }
-                                });
-                                */
                             } else {
-                                console.log(err)
+                                res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
                             }
-
                         })
                     } else {
                         //contract creation
-
+                        res.send(JSON.parse(JSON.stringify(Object.assign(result1, result2), undefined, 4)))
                     }
                 } else {
-
+                    res.send({"error": "An unknown error occured"})
                 }
             })
+        } else {
+            res.send({"error": "An unknown error occured"})
         }
     })
 })
