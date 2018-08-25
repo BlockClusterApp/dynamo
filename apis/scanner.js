@@ -402,9 +402,9 @@ async function scanBlock(web3, blockNumber, totalSmartContracts) {
 						let isSmartContractDeploy = await fetchTxn(web3, result.transactions[count])
 						if(isSmartContractDeploy) {
 							totalSmartContracts++;
-                            await insertToTxnHistory(result.transactions[count], "Smart Contract Deploy")
+                            await insertToTxnHistory(result.transactions[count], "deploy")
 						} else {
-                            await insertToTxnHistory(result.transactions[count], "Smart Contract Call")
+                            await insertToTxnHistory(result.transactions[count], "call")
                         }
 					} catch(e) {
 						reject(e)
@@ -1330,7 +1330,7 @@ async function getSize() {
         request(`http://127.0.0.1:6382/utility/size`, { json: false }, (err, res, body) => {
             if (err) { reject(err) }
             else {
-                resolve({gethSize: JSON.parse(body).gethSize, constellationSize: JSON.parse(body).constellationSize})
+                resolve({gethSize: JSON.parse(body).size})
             }
         });
     })
