@@ -1573,7 +1573,7 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
     });
 })
 
-app.get(`/contracts/search`, async (req, res) => {
+app.post(`/contracts/search`, async (req, res) => {
     var query = req.body;
 
     localDB.collection("contracts").find(query).toArray(function(err, result) {
