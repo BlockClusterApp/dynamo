@@ -1564,7 +1564,7 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
         bytecode: bytecode,
         abiHash: sha3.keccak256(JSON.stringify(abi)),
         bytecodeHash: sha3.keccak256(bytecode)
-    } }, {upsert: true, safe: false}, function(err, res) {
+    } }, {upsert: true, safe: false}, function(err, result) {
         if(err) {
             res.send({"error": "An error occured"})
         } else {
