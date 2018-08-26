@@ -1566,9 +1566,9 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
         bytecodeHash: sha3.keccak256(bytecode)
     } }, {upsert: true, safe: false}, function(err, res) {
         if(err) {
-            reject(err)
+            res.send({"error": "An error occured"})
         } else {
-            resolve()
+            res.send({"message": "Successfully updated or added contract"})
         }
     });
 })
