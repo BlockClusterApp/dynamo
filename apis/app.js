@@ -1558,13 +1558,14 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
     let bytecode = req.body.bytecode;
     let abi = req.body.abi;
     let name = req.body.name;
-
+    console.log("Step 1")
     localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
         abi: abi,
         bytecode: bytecode,
         abiHash: sha3.keccak256(JSON.stringify(abi)),
-        bytecodeHash: sha3.keccak256(bytecode)
+        bytecodeHash: sha3.keccak256(JSON.stringify(bytecode))
     } }, {upsert: true, safe: false}, function(err, result) {
+        console.log("Step 2")
         if(err) {
             res.send({"error": "An error occured"})
         } else {
