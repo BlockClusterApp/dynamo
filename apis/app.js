@@ -1559,7 +1559,7 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
     let abi = req.body.abi;
     let name = req.body.name;
     localDB.collection("contracts").updateOne({name: req.body.name}, { $set: {
-        abi: abi,
+        abi: (typeof(abi) === "string" ? JSON.parse(abi) : abi),
         bytecode: bytecode,
         abiHash: sha3.keccak256(JSON.stringify(abi)),
         bytecodeHash: sha3.keccak256(bytecode)
