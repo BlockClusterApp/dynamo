@@ -1331,7 +1331,6 @@ app.get(`/transactions/audit`, async (req, res) => {
                         //contract call
                         web3.eth.getCode(result2.to, "latest", (err, code) => {
                             if(!err) {
-                                console.log("Code: " + code)
                                 localDB.collection("contracts").find({}).toArray(function(err, result) {
                                     if(err) {
                                         res.send({"error": "Unknown Error Occured"})

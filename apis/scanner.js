@@ -1261,8 +1261,6 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
                                     admin: events[count].args.admin,
                                     eventHash: sha256(JSON.stringify(events[count])),
                                     eventName: "created",
-                                    key: plainObj.key,
-                                    data: plainObj.value,
                                     description: events[count].args.description,
                                     transactionHash: events[count].transactionHash,
                                     timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
