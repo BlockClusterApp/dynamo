@@ -136,7 +136,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                  value: web3.toHex(0)
             };
 
-            res.send([rawTx])
+            res.send({"rawTx": rawTx})
         } else {
             assets.createSoloAssetType.sendTransaction(req.body.assetName, req.body.description || "", {
                 from: req.body.assetIssuer,
@@ -165,7 +165,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
                      value: web3.toHex(0)
                 };
 
-                res.send([rawTx])
+                res.send({"rawTx": rawTx})
             }
         } else {
             if(req.body.parts > 18) {

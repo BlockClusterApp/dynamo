@@ -736,7 +736,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                                         await upsertSoloAssetAuditTrail({
                                                             assetName: pastEvents[iii].args.assetName,
-                                                            uniqueIdentifier: uniqueAssetIdentifierValue,
+                                                            uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
                                                             eventHash: sha256(JSON.stringify(pastEvents[iii]))
                                                         }, {
                                                             eventName: "addedOrUpdatedEncryptedDataObjectHash",
@@ -748,7 +748,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 
                                                         await notifyClient({
                                                             assetName: pastEvents[iii].args.assetName,
-                                                            uniqueIdentifier: uniqueAssetIdentifierValue,
+                                                            uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
                                                             eventHash: sha256(JSON.stringify(pastEvents[iii])),
                                                             eventName: "addedOrUpdatedEncryptedDataObjectHash",
                                                             timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
