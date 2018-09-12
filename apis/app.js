@@ -526,7 +526,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         }
     }
 
-    res.send({"txnxHash": txns})
+    res.send({"txnHash": txns})
 })
 
 app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
