@@ -2041,10 +2041,10 @@ app.post(`/transactions/signAndSend`, async (req, res) => {
       let tx = new EthereumTx(req.body.txns[count].raw);
       let privateKey = EthereumUtil.toBuffer(req.body.txns[count].privateKey, "hex");
       tx.sign(privateKey)
-      result.push(await sendRawTxn("0x" + tx.serialize().toString("hex")))
+      result.push((await sendRawTxn("0x" + tx.serialize().toString("hex"))).txnHash)
     }
 
-    res.send(result)
+    res.send({txhash: result})
   } catch (e) {
     res.send({
       "error": e
@@ -2057,9 +2057,9 @@ app.post(`/transactions/sendRaw`, async (req, res) => {
 
   try {
     for (let count = 0; count < req.body.txns.length; count++) {
-      result.push(await sendRawTxn(req.body.txns[count]))
+      result.push((await sendRawTxn(req.body.txns[count])).txnHash)
     }
-    res.send(result)
+    res.send({txhash: result})
   } catch (e) {
     res.send({
       "error": e
