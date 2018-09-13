@@ -136,8 +136,8 @@ app.post(`/assets/createAssetType`, async (req, res) => {
       var rawTx = {
         gasPrice: web3.toHex(0),
         gasLimit: web3.toHex(99999999999999999),
-        from: req.body.assetIssuer,
-        nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
+        from: req.body.fromAccount,
+        nonce: web3.toHex(await getNonce(req.body.fromAccount)),
         data: assets.createSoloAssetType.getData(req.body.assetName, req.body.description || ""),
         to: network.assetsContractAddress,
         value: web3.toHex(0)
@@ -148,7 +148,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
       })
     } else {
       assets.createSoloAssetType.sendTransaction(req.body.assetName, req.body.description || "", {
-        from: req.body.assetIssuer,
+        from: req.body.fromAccount,
         gas: '99999999999999999'
       }, function(error, txnHash) {
         if (!error) {
@@ -173,7 +173,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
         var rawTx = {
           gasPrice: web3.toHex(0),
           gasLimit: web3.toHex(99999999999999999),
-          from: req.body.assetIssuer,
+          from: req.body.fromAccount,
           nonce: web3.toHex(await getNonce(req.body.assetIssuer)),
           data: assets.createBulkAssetType.getData(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, req.body.description || ""),
           to: network.assetsContractAddress,
@@ -191,7 +191,7 @@ app.post(`/assets/createAssetType`, async (req, res) => {
         })
       } else {
         assets.createBulkAssetType.sendTransaction(req.body.assetName, (req.body.reissuable === "true"), req.body.parts, req.body.description || "", {
-          from: req.body.assetIssuer,
+          from: req.body.fromAccount,
           gas: '99999999999999999'
         }, function(error, txnHash) {
           if (!error) {
@@ -964,7 +964,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
                 var rawTx1 = {
                   gasPrice: web3.toHex(0),
                   gasLimit: web3.toHex(99999999999999999),
-                  from: req.body.fromAddress,
+                  from: req.body.fromAccount,
                   nonce: web3.toHex(await getNonce(req.body.fromAddress)),
                   data: assets.approve.getData(
                     req.body.fromAssetType,
@@ -982,7 +982,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
                 var rawTx2 = {
                   gasPrice: web3.toHex(0),
                   gasLimit: web3.toHex(99999999999999999),
-                  from: req.body.fromAddress,
+                  from: req.body.fromAccount,
                   nonce: web3.toHex(await getNonce(req.body.fromAddress)),
                   data: atomicSwap.lock.getData(
                     req.body.toAddress,
@@ -1018,7 +1018,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
                   req.body.fromAssetUniqueIdentifier,
                   req.body.fromAssetUnits,
                   network.atomicSwapContractAddress, {
-                    from: req.body.fromAddress,
+                    from: req.body.fromAccount,
                     gas: '99999999999999999'
                   }, (error, txnHash) => {
                     if (!error) {
@@ -1040,7 +1040,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
                         to_asset_parts.toString(),
                         req.body.toAssetUniqueIdentifier,
                         toGenesisBlockHash, {
-                          from: req.body.fromAddress,
+                          from: req.body.fromAccount,
                           gas: '99999999999999999'
                         }, (error, txnHash) => {
 
