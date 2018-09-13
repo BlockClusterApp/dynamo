@@ -1470,7 +1470,7 @@ app.post(`/streams/search`, (req, res) => {
   });
 })
 
-app.post(`/assets/createStream`, async (req, res) => {
+app.post(`/streams/create`, async (req, res) => {
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
   var streamsContract = web3.eth.contract(smartContracts.streams.abi);
   var streams = streamsContract.at(network.streamsContractAddress);
