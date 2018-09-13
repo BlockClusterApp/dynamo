@@ -1496,7 +1496,7 @@ app.post(`/streams/create`, async (req, res) => {
     }, function(error, txnHash) {
       if (!error) {
         res.send({
-          "txhash": txnHash
+          "txnHash": txnHash
         })
       } else {
         res.send({
@@ -1533,7 +1533,7 @@ app.post(`/streams/grantAccessToPublish`, async (req, res) => {
     }, function(error, txnHash) {
       if (!error) {
         res.send({
-          "txhash": txnHash
+          "txnHash": txnHash
         })
       } else {
         res.send({
@@ -1570,7 +1570,7 @@ app.post(`/streams/revokeAccessToPublish`, async (req, res) => {
     }, function(error, txnHash) {
       if (!error) {
         res.send({
-          "txhash": txnHash
+          "txnHash": txnHash
         })
       } else {
         res.send({
@@ -2044,7 +2044,7 @@ app.post(`/transactions/signAndSend`, async (req, res) => {
       result.push((await sendRawTxn("0x" + tx.serialize().toString("hex"))).txnHash)
     }
 
-    res.send({txhash: result})
+    res.send({txnHash: result})
   } catch (e) {
     res.send({
       "error": e
@@ -2059,7 +2059,7 @@ app.post(`/transactions/sendRaw`, async (req, res) => {
     for (let count = 0; count < req.body.txns.length; count++) {
       result.push((await sendRawTxn(req.body.txns[count])).txnHash)
     }
-    res.send({txhash: result})
+    res.send({txnHash: result})
   } catch (e) {
     res.send({
       "error": e
