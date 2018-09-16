@@ -1148,7 +1148,7 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
                 network.atomicSwapContractAddress, {
                   from: order.toAddress,
                   gas: '99999999999999999'
-                }, (error), txnHash => {
+                }, (error, txnHash) => {
                   if (!error) {
                     txns.push(txnHash)
                     atomicSwap.claim.sendTransaction(
