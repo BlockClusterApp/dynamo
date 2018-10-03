@@ -35,6 +35,18 @@ process.on('uncaughtException', function(error) {
   console.log(error);
 });
 
+Array.prototype.remove = function() {
+    var what, a = arguments, L = a.length, ax;
+    while (L && this.length) {
+        what = a[--L];
+        while ((ax = this.indexOf(what)) !== -1) {
+            this.splice(ax, 1);
+        }
+    }
+    return this;
+};
+
+
 function generateSecret() {
   var ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
   var ID_LENGTH = 8;
@@ -2145,6 +2157,24 @@ async function adminAddPeer(url) {
   })
 }
 
+async function adminRemovePeer(url) {
+  let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.sendAsync({
+      method: "admin_removePeer",
+      params: [url],
+      jsonrpc: "2.0",
+      id: new Date().getTime()
+    }, (error) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
 //always keep static-nodes and permissioned-nodes sync with DB
 
 app.post(`/utility/whitelistPeer`, async (req, res) => {
@@ -2193,6 +2223,53 @@ app.post(`/utility/whitelistPeer`, async (req, res) => {
   })
 })
 
+app.post(`/utility/removeWhitelistedPeer`, async (req, res) => {
+  //let finalURL = `enode://${enode}[::]:${port}`
+
+  let url = req.body.url;
+
+  localDB.collection("nodeData").findOne({
+    "type": "scanData"
+  }, async function(err, result) {
+    if (!err) {
+      let whitelistedNodes;
+      if (result.whitelistedNodes) {
+        whitelistedNodes = result.whitelistedNodes;
+      } else {
+        whitelistedNodes = []
+      }
+
+      if (whitelistedNodes.includes(url)) {
+
+        whitelistedNodes.remove(url)
+
+        try {
+          await clearFile("/dynamo/bcData/node/permissioned-nodes.json")
+          await writeFile("/dynamo/bcData/node/permissioned-nodes.json", JSON.stringify(whitelistedNodes))
+          await upsertNetworkInfo({
+            whitelistedNodes: whitelistedNodes
+          })
+
+          res.send({
+            "message": "Successfully removed node from whitelist"
+          })
+        } catch (e) {
+          res.send({
+            "error": e
+          })
+        }
+      } else {
+        res.send({
+          "message": "Peer not yet whitelisted"
+        })
+
+      }
+    } else {
+      console.log(err)
+    }
+  })
+})
+
 app.post(`/utility/addPeer`, async (req, res) => {
   let url = req.body.url;
 
@@ -2230,6 +2307,50 @@ app.post(`/utility/addPeer`, async (req, res) => {
             "error": e
           })
         }
+      }
+    } else {
+      console.log(err)
+    }
+  })
+})
+
+app.post(`/utility/removePeer`, async (req, res) => {
+  let url = req.body.url;
+
+  localDB.collection("nodeData").findOne({
+    "type": "scanData"
+  }, async function(err, result) {
+    if (!err) {
+      let staticPeers;
+      if (result.staticPeers) {
+        staticPeers = result.staticPeers;
+      } else {
+        staticPeers = []
+      }
+
+      if (staticPeers.includes(url)) {
+        staticPeers.remove(url)
+
+        try {
+          await clearFile("/dynamo/bcData/node/static-nodes.json")
+          await writeFile("/dynamo/bcData/node/static-nodes.json", JSON.stringify(staticPeers))
+          await adminRemovePeer(url)
+          await upsertNetworkInfo({
+            staticPeers: staticPeers
+          })
+
+          res.send({
+            "message": "Successfully added node"
+          })
+        } catch (e) {
+          res.send({
+            "error": e
+          })
+        }
+      } else {
+        res.send({
+          "message": "Node URL already exists"
+        })
       }
     } else {
       console.log(err)
