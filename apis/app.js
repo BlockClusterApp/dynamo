@@ -2407,7 +2407,7 @@ app.post(`/contracts/search`, async (req, res) => {
   });
 })
 
-app.get(`/pre/generateKey`, async (req, res) => {
+app.get(`/post/generateKey`, async (req, res) => {
   let wallet = Wallet.generate();
   let private_key_hex = wallet.getPrivateKey().toString("hex");
   let private_key_base64 = wallet.getPrivateKey().toString("base64");
@@ -2429,6 +2429,8 @@ app.post('/pre/storeEncrypted', async (req, res) => {
   let metadata = req.body.metadata;
 
   let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+
+  text = base64.encode(JSON.stringify(text))
 
   exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${text}'`, (error, stdout, stderr) => {
     if (!error) {
@@ -2454,6 +2456,7 @@ app.post('/pre/storeEncrypted', async (req, res) => {
       }, (error, result, body) => {
         if (!error) {
           if (body.error) {
+            console.log(body.error)
             res.send({
               "error": "An Error Occured"
             })
@@ -2463,12 +2466,14 @@ app.post('/pre/storeEncrypted', async (req, res) => {
             })
           }
         } else {
+          console.log(publicKey)
           res.send({
             "error": "An Error Occured"
           })
         }
       })
     } else {
+      console.log(error)
       res.send({
         "error": "An Error Occured"
       })
