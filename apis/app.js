@@ -2407,7 +2407,7 @@ app.post(`/contracts/search`, async (req, res) => {
   });
 })
 
-app.get(`/post/generateKey`, async (req, res) => {
+app.post(`/pre/generateKey`, async (req, res) => {
   let wallet = Wallet.generate();
   let private_key_hex = wallet.getPrivateKey().toString("hex");
   let private_key_base64 = wallet.getPrivateKey().toString("base64");
@@ -2563,6 +2563,44 @@ app.post('/pre/revokeAccess', async (req, res) => {
   })
 })
 
+async function decryptData(privateKeyHex, publicKeyHex, ownerPublicKeyHex, capsule, ciphertext, decrypt_direct, derivationKey) {
+    return new Promise((resolve, reject) => {
+        try {
+            if(decrypt_direct) {
+                exec('python3 /dynamo/apis/crypto-operations/decrypt.py ' + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + capsule + " " + ciphertext, (error, stdout, stderr) => {
+                    if(!error) {
+                        try {
+                            let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
+                            resolve(plainObj)
+                        } catch(e) {
+                            //decrypted data is of invalid format.
+                            resolve()
+                        }
+                    } else {
+                        reject(error)
+                    }
+                })
+            } else if(!decrypt_direct) {
+                exec("python3 /dynamo/apis/crypto-operations/decrypt-pre.py '" + derivationKey + "' " + capsule + " " + ciphertext + " " + hexToBase64(privateKeyHex) + " " + hexToBase64(publicKeyHex) + " " + hexToBase64(ownerPublicKeyHex), (error, stdout, stderr) => {
+                    if(!error) {
+                        try {
+                            let plainObj = JSON.parse(stdout.substr(2).slice(0, -2))
+                            resolve(plainObj)
+                        } catch(e) {
+                            //decrypted data is of invalid format.
+                            resolve({key: "error", value: ""})
+                        }
+                    } else {
+                        reject(error)
+                    }
+                })
+            }
+        } catch(e) {
+            reject(e)
+        }
+    })
+}
+
 app.post('/pre/getData', async (req, res) => {
   let compressed_publickey_hex = req.body.publicKey;
   let privateKey = req.body.privateKey;
@@ -2594,8 +2632,21 @@ app.post('/pre/getData', async (req, res) => {
           "error": "An Error Occured"
         })
       } else {
+
+        let finalResult = [];
+
+        for(let iii = 0; iii <  body.queryResult.length; iii++) {
+            let cipherText =  body.queryResult[iii].encryptedData;
+            let capsule =  body.queryResult[iii].capsule;
+            let plainObj = await decryptData(privateKey, compressed_publickey_hex, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, body.derivationKey)
+
+            if(plainObj) {
+                finalResult.push(plainObj)
+            }
+        }
+
         res.send({
-          "message": body
+          "message": finalResult
         })
       }
     }
