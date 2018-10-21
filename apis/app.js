@@ -2638,7 +2638,7 @@ app.post('/pre/getData', async (req, res) => {
         for(let iii = 0; iii <  body.queryResult.length; iii++) {
             let cipherText =  body.queryResult[iii].encryptedData;
             let capsule =  body.queryResult[iii].capsule;
-            let plainObj = await decryptData(privateKey, compressed_publickey_hex, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, body.derivationKey)
+            let plainObj = await decryptData(privateKey, compressed_publickey_hex, ownerPublicKey, capsule, cipherText, compressed_publickey_hex === ownerPublicKey, body.derivationKey)
 
             if(plainObj) {
                 finalResult.push(plainObj)
