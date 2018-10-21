@@ -2486,7 +2486,7 @@ app.post('/pre/grantAccess', async (req, res) => {
   let privateKey = req.body.privateKey;
   let otherUserPublicKey = req.body.toPublicKey;
 
-  exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(privateKey) + " " + otherUserPublicKey, (error, stdout, stderr) => {
+  exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(privateKey) + " " + hexToBase64(otherUserPublicKey), (error, stdout, stderr) => {
     if (!error) {
       let kfrags = stdout
       let signature = ec.sign(sha3.keccak256(compressed_publickey_hex), privateKey, "hex", {
