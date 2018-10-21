@@ -6,7 +6,7 @@ from umbral.signing import Signer
 alice_private_key = keys.UmbralPrivateKey.from_bytes(base64.b64decode(sys.argv[1]))
 signer_alice = Signer(alice_private_key)
 bob_public_key = keys.UmbralPublicKey.from_bytes(base64.b64decode(sys.argv[2]))
-kfrags = pre.generate_kfrags(alice_private_key, signer_alice, bob_public_key, 10, 20)
+kfrags = pre.generate_kfrags(alice_private_key, bob_public_key, 10, 20, signer_alice)
 
 kfrags_bytes = tuple(map(bytes, kfrags))
 L = list(kfrags_bytes)
