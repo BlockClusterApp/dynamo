@@ -2505,6 +2505,7 @@ app.post('/pre/grantAccess', async (req, res) => {
       }, async (error, result, body) => {
         if (!error) {
           if (body.error) {
+            console.log(body.error)
             res.send({
               "error": "An Error Occured"
             })
@@ -2514,12 +2515,14 @@ app.post('/pre/grantAccess', async (req, res) => {
             })
           }
         } else {
+          console.log(error)
           res.send({
             "error": "An Error Occured"
           })
         }
       })
     } else {
+      console.log(error)
       res.send({
         "error": "An Error Occured"
       })
@@ -2547,6 +2550,7 @@ app.post('/pre/revokeAccess', async (req, res) => {
   }, async (error, result, body) => {
     if (!error) {
       if (body.error) {
+        console.log(error)
         res.send({
           "error": "An Error Occured"
         })
@@ -2556,6 +2560,7 @@ app.post('/pre/revokeAccess', async (req, res) => {
         })
       }
     } else {
+      console.log(error)
       res.send({
         "error": "An Error Occured"
       })
