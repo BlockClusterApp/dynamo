@@ -2439,7 +2439,7 @@ app.post('/pre/storeEncrypted', async (req, res) => {
       let capsule = stdout[1].substr(2).slice(0, -2)
 
       let ciphertext_hash = sha3.keccak256(ciphertext);
-      let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {
+      let signature = ec.sign(ciphertext_hash, privateKey, "hex", {
         canonical: true
       });
 
