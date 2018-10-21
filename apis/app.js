@@ -2620,7 +2620,7 @@ app.post('/pre/getData', async (req, res) => {
       publicKey: compressed_publickey_hex,
       ownerPublicKey: ownerPublicKey
     }
-  }, (error, result, body) => {
+  }, async (error, result, body) => {
     if (error) {
       res.send({
         "error": "An Error Occured"
