@@ -36,14 +36,16 @@ process.on('uncaughtException', function(error) {
 });
 
 Array.prototype.remove = function() {
-    var what, a = arguments, L = a.length, ax;
-    while (L && this.length) {
-        what = a[--L];
-        while ((ax = this.indexOf(what)) !== -1) {
-            this.splice(ax, 1);
-        }
+  var what, a = arguments,
+    L = a.length,
+    ax;
+  while (L && this.length) {
+    what = a[--L];
+    while ((ax = this.indexOf(what)) !== -1) {
+      this.splice(ax, 1);
     }
-    return this;
+  }
+  return this;
 };
 
 
@@ -2056,7 +2058,9 @@ app.post(`/transactions/signAndSend`, async (req, res) => {
       result.push((await sendRawTxn("0x" + tx.serialize().toString("hex"))).txnHash)
     }
 
-    res.send({txnHash: result})
+    res.send({
+      txnHash: result
+    })
   } catch (e) {
     res.send({
       "error": e
@@ -2071,7 +2075,9 @@ app.post(`/transactions/sendRaw`, async (req, res) => {
     for (let count = 0; count < req.body.txns.length; count++) {
       result.push((await sendRawTxn(req.body.txns[count])).txnHash)
     }
-    res.send({txnHash: result})
+    res.send({
+      txnHash: result
+    })
   } catch (e) {
     res.send({
       "error": e
@@ -2399,6 +2405,196 @@ app.post(`/contracts/search`, async (req, res) => {
       res.send(result)
     }
   });
+})
+
+app.get(`/pre/generateKey`, async (req, res) => {
+  let wallet = Wallet.generate();
+  let private_key_hex = wallet.getPrivateKey().toString("hex");
+  let private_key_base64 = wallet.getPrivateKey().toString("base64");
+  let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
+  let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
+
+  res.send({
+    "message": {
+      privateKey_hex: private_key_hex,
+      compressed_publickey_hex: compressed_public_key_hex
+    }
+  })
+})
+
+app.post('/pre/storeEncrypted', async (req, res) => {
+  let privateKey = req.body.privateKey;
+  let publicKey = req.body.publicKey;
+  let text = req.body.text;
+  let metadata = req.body.metadata;
+
+  let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
+
+  exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${text}'`, (error, stdout, stderr) => {
+    if (!error) {
+      stdout = stdout.split(" ")
+      let ciphertext = stdout[0].substr(2).slice(0, -1)
+      let capsule = stdout[1].substr(2).slice(0, -2)
+
+      let ciphertext_hash = sha3.keccak256(ciphertext);
+      let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {
+        canonical: true
+      });
+
+      request({
+        url: `${Config.getImpulseURL()}/writeObject`,
+        method: "POST",
+        json: {
+          publicKey: publicKey,
+          encryptedData: ciphertext,
+          signature: signature,
+          metadata: metadata,
+          capsule: capsule
+        }
+      }, (error, result, body) => {
+        if (!error) {
+          if (body.error) {
+            res.send({
+              "error": "An Error Occured"
+            })
+          } else {
+            res.send({
+              "message": ciphertext_hash
+            })
+          }
+        } else {
+          res.send({
+            "error": "An Error Occured"
+          })
+        }
+      })
+    } else {
+      res.send({
+        "error": "An Error Occured"
+      })
+    }
+  })
+})
+
+app.post('/pre/grantAccess', async (req, res) => {
+  let compressed_publickey_hex = req.body.publicKey;
+  let privateKey = req.body.privateKey;
+  let otherUserPublicKey = req.body.toPublicKey;
+
+  exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(privateKey) + " " + otherUserPublicKey, (error, stdout, stderr) => {
+    if (!error) {
+      let kfrags = stdout
+      let signature = ec.sign(sha3.keccak256(compressed_publickey_hex), privateKey, "hex", {
+        canonical: true
+      });
+
+      request({
+        url: `${Config.getImpulseURL()}/writeKey`,
+        method: "POST",
+        json: {
+          ownerPublicKey: compressed_publickey_hex,
+          reEncryptionKey: kfrags,
+          signature: signature,
+          receiverPublicKey: otherUserPublicKey
+        }
+      }, async (error, result, body) => {
+        if (!error) {
+          if (body.error) {
+            res.send({
+              "error": "An Error Occured"
+            })
+          } else {
+            res.send({
+              "error": "Access Granted"
+            })
+          }
+        } else {
+          res.send({
+            "error": "An Error Occured"
+          })
+        }
+      })
+    } else {
+      res.send({
+        "error": "An Error Occured"
+      })
+    }
+  })
+})
+
+app.post('/pre/revokeAccess', async (req, res) => {
+  let compressed_publickey_hex = req.body.publicKey;
+  let privateKey = req.body.privateKey;
+  let otherUserPublicKey = req.body.toPublicKey;
+
+  let signature = ec.sign(sha3.keccak256(compressed_publickey_hex), privateKey, "hex", {
+    canonical: true
+  });
+
+  request({
+    url: `${Config.getImpulseURL()}/deleteKey`,
+    method: "POST",
+    json: {
+      ownerPublicKey: compressed_publickey_hex,
+      signature: signature,
+      receiverPublicKey: otherUserPublicKey
+    }
+  }, async (error, result, body) => {
+    if (!error) {
+      if (body.error) {
+        res.send({
+          "error": "An Error Occured"
+        })
+      } else {
+        res.send({
+          "message": "Access Revoked"
+        })
+      }
+    } else {
+      res.send({
+        "error": "An Error Occured"
+      })
+    }
+  })
+})
+
+app.post('/pre/getData', async (req, res) => {
+  let compressed_publickey_hex = req.body.publicKey;
+  let privateKey = req.body.privateKey;
+  let ownerPublicKey = req.body.ownerPublicKey;
+  let query = req.body.query;
+
+  let signature = ec.sign(sha3.keccak256(JSON.stringify(query)), privateKey, "hex", {
+    canonical: true
+  });
+
+  request({
+    url: `${Config.getImpulseURL()}/query`,
+    method: "POST",
+    json: {
+      query: query,
+      signature: signature,
+      publicKey: compressed_publickey_hex,
+      ownerPublicKey: ownerPublicKey
+    }
+  }, (error, result, body) => {
+    if (error) {
+      res.send({
+        "error": "An Error Occured"
+      })
+    } else {
+
+      if (body.error) {
+        res.send({
+          "error": "An Error Occured"
+        })
+      } else {
+        res.send({
+          "message": body
+        })
+      }
+    }
+  })
 })
 
 app.listen(6382)
