@@ -11,4 +11,5 @@ docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${NODE_ENV}-${COMMIT_HASH}"
 if [ "$NODE_ENV" = "dev" ];
 then
     docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:development"
+    docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:test"
 fi
