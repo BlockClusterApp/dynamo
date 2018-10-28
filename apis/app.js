@@ -299,7 +299,7 @@ app.post(`/assets/issueSoloAsset`, async (req, res) => {
       } else {
         assets.issueSoloAsset.sendTransaction(req.body.assetName, req.body.toAccount, req.body.identifier, compressed_public_key_hex, {
           from: req.body.fromAccount,
-          gas: '4712388'
+          gas: '99999999999999999'
         }, function(error, txnHash) {
           if (error) {
             res.send({
@@ -345,7 +345,7 @@ app.post(`/assets/issueBulkAsset`, async (req, res) => {
   } else {
     assets.issueBulkAsset.sendTransaction(req.body.assetName, units.toString(), req.body.toAccount, req.body.description || "", {
       from: req.body.fromAccount,
-      gas: '4712388'
+      gas: '99999999999999999'
     }, function(error, txnHash) {
       if (error) {
         res.send({
@@ -383,7 +383,7 @@ app.post(`/assets/transferSoloAsset`, async (req, res) => {
   } else {
     assets.transferOwnershipOfSoloAsset.sendTransaction(req.body.assetName, req.body.identifier, req.body.toAccount, req.body.description || "", {
       from: req.body.fromAccount,
-      gas: '4712388'
+      gas: '99999999999999999'
     }, function(error, txnHash) {
       if (error) {
         res.send({
@@ -423,7 +423,7 @@ app.post(`/assets/transferBulkAsset`, async (req, res) => {
   } else {
     assets.transferBulkAssetUnits.sendTransaction(req.body.assetName, req.body.toAccount, units.toString(), req.body.description || "", {
       from: req.body.fromAccount,
-      gas: '4712388'
+      gas: '99999999999999999'
     }, function(error, txnHash) {
       if (error) {
         res.send({
@@ -534,7 +534,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
       } else {
         assets.addOrUpdateSoloAssetExtraData.sendTransaction(req.body.assetName, req.body.identifier, key, value, {
           from: req.body.fromAccount,
-          gas: '4712388'
+          gas: '99999999999999999'
         }, function(error, txnHash) {
           if (error) {
             reject(error.toString())
@@ -628,7 +628,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
       } else {
         assets.addOrUpdateEncryptedDataObjectHash.sendTransaction(req.body.assetName, req.body.identifier, ciphertext_hash, {
           from: req.body.fromAccount,
-          gas: '4712388'
+          gas: '99999999999999999'
         }, function(error, txnHash) {
           if (error) {
             reject(error.toString())
@@ -771,7 +771,7 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
                 } else {
                   assets.soloAssetChangeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, true, {
                     from: req.body.fromAccount,
-                    gas: '4712388'
+                    gas: '99999999999999999'
                   }, function(error, txnHash) {
                     if (error) {
                       res.send({
@@ -865,7 +865,7 @@ app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
             } else {
               assets.soloAssetChangeAccess.sendTransaction(req.body.assetName, req.body.identifier, req.body.publicKey, false, {
                 from: req.body.fromAccount,
-                gas: '4712388'
+                gas: '99999999999999999'
               }, function(error, txnHash) {
                 if (error) {
                   res.send({
@@ -917,7 +917,7 @@ app.post(`/assets/closeAsset`, async (req, res) => {
   } else {
     assets.closeSoloAsset.sendTransaction(req.body.assetName, req.body.identifier, {
       from: req.body.fromAccount,
-      gas: '4712388'
+      gas: '99999999999999999'
     }, function(error, txnHash) {
       if (error) {
         res.send({
@@ -1728,7 +1728,8 @@ app.post(`/streams/publish`, async (req, res) => {
             })
           } else {
             streams.publish.sendTransaction(req.body.streamName, req.body.key, encryptedDataHash, true, compressed_public_key_base64, req.body.publicKeys.join(), {
-              from: req.body.fromAccount
+              from: req.body.fromAccount,
+              gas: '99999999999999999'
             }, function(error, txnHash) {
               if (!error) {
                 res.send({
@@ -1771,7 +1772,8 @@ app.post(`/streams/publish`, async (req, res) => {
       })
     } else {
       streams.publish.sendTransaction(req.body.streamName, req.body.key, req.body.data, false, "", "", {
-        from: req.body.fromAccount
+        from: req.body.fromAccount,
+        gas: '99999999999999999'
       }, function(error, txnHash) {
         if (!error) {
           res.send({
