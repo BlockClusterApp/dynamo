@@ -1437,9 +1437,12 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
 })
 
 app.post(`/assets/search`, (req, res) => {
-  var query = req.body;
+  let query = req.body.query || req.body;
+  let limit = req.body.limit || 50;
+  let skip = req.body.skip || 0;
+  let sort = req.body.sort || {};
 
-  localDB.collection("soloAssets").find(query).toArray(function(err, result) {
+  localDB.collection("soloAssets").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
       res.send({
         "error": "Search Error Occured"
@@ -1471,9 +1474,12 @@ app.post(`/assets/audit`, (req, res) => {
 })
 
 app.post(`/streams/search`, (req, res) => {
-  var query = req.body;
+  let query = req.body.query || req.body;
+  let limit = req.body.limit || 50;
+  let skip = req.body.skip || 0;
+  let sort = req.body.sort || {};
 
-  localDB.collection("streamsItems").find(query).toArray(function(err, result) {
+  localDB.collection("streamsItems").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
       res.send({
         "error": "Search Error Occured"
@@ -2396,9 +2402,12 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
 })
 
 app.post(`/contracts/search`, async (req, res) => {
-  var query = req.body;
+  let query = req.body.query || req.body;
+  let limit = req.body.limit || 50;
+  let skip = req.body.skip || 0;
+  let sort = req.body.sort || {};
 
-  localDB.collection("contracts").find(query).toArray(function(err, result) {
+  localDB.collection("contracts").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
       res.send({
         "error": "Search Error Occured"
