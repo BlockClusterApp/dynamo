@@ -1437,10 +1437,10 @@ app.post(`/assets/getOrderInfo`, (req, res) => {
 })
 
 app.post(`/assets/search`, (req, res) => {
-  let query = req.body.query || req.body;
-  let limit = req.body.limit || 50;
-  let skip = req.body.skip || 0;
-  let sort = req.body.sort || {};
+  let query = req.body.$query || req.body;
+  let limit = req.body.$limit || 50;
+  let skip = req.body.$skip || 0;
+  let sort = req.body.$sort || {};
 
   localDB.collection("soloAssets").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
@@ -1474,10 +1474,10 @@ app.post(`/assets/audit`, (req, res) => {
 })
 
 app.post(`/streams/search`, (req, res) => {
-  let query = req.body.query || req.body;
-  let limit = req.body.limit || 50;
-  let skip = req.body.skip || 0;
-  let sort = req.body.sort || {};
+  let query = req.body.$query || req.body;
+  let limit = req.body.$limit || 50;
+  let skip = req.body.$skip || 0;
+  let sort = req.body.$sort || {};
 
   localDB.collection("streamsItems").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
@@ -2402,10 +2402,10 @@ app.post(`/contracts/addOrUpdate`, async (req, res) => {
 })
 
 app.post(`/contracts/search`, async (req, res) => {
-  let query = req.body.query || req.body;
-  let limit = req.body.limit || 50;
-  let skip = req.body.skip || 0;
-  let sort = req.body.sort || {};
+  let query = req.body.$query || req.body;
+  let limit = req.body.$limit || 50;
+  let skip = req.body.$skip || 0;
+  let sort = req.body.$sort || {};
 
   localDB.collection("contracts").find(query).sort(sort).skip(skip).limit(limit).toArray(function(err, result) {
     if (err) {
