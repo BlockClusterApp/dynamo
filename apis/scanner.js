@@ -1515,11 +1515,13 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                     let blockToScan = 0;
                     let totalSmartContracts = 0;
 
+                    console.log(doc)
+
                     if (doc) {
                       impulseToken = doc.impulseToken || '';
-                      blockToScan = (doc.blockToScan ? doc.blockToScan : 0);
-                      totalSmartContracts = (doc.totalSmartContracts ? doc.totalSmartContracts : 0);
-                      totalTransactions = (doc.totalTransactions ? doc.totalTransactions : 0);
+                      blockToScan = doc.blockToScan || 0;
+                      totalSmartContracts = doc.totalSmartContracts || 0;
+                      totalTransactions = doc.totalTransactions || 0;
                     }
 
                     callbackURL = node.callbackURL;
