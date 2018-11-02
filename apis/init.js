@@ -95,7 +95,7 @@ async function upsertNetworkInfo(set) {
   })
 }
 
-let getTxnReceipt = (txnHash) => {
+let getTxnReceipt = async (txnHash) => {
   return new Promise((resolve, reject) => {
     let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
     web3.eth.getTransactionReceipt(txnHash, (error, receipt) => {
