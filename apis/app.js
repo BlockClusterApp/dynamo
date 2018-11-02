@@ -25,6 +25,7 @@ var atob = require('atob');
 const EthereumTx = require('ethereumjs-tx')
 const EthereumUtil = require('ethereumjs-util')
 var abiDecoder = require('abi-decoder');
+var Web3 = require("web3");
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -108,7 +109,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
         instanceId: instanceId
       }, function(err, node) {
         if (!err) {
-          if (node.assetsContractAddress && node.atomicSwapContractAddress && node.streamsContractAddress) {
+          if (node.assetsContractAddress && node.atomicSwapContractAddress && node.streamsContractAddress && node.impulseContractAddress) {
             network = node;
           } else {
             setTimeout(fetchNode, 1000)
@@ -134,6 +135,20 @@ async function getNonce(address) {
         resolve(nonce)
       } else {
         reject("An error occured")
+      }
+    })
+  })
+}
+
+async function getImpulseToken(address) {
+  return new Promise((resolve, reject) => {
+    localDB.collection("nodeData").findOne({
+      "type": "scanData"
+    }, async function(err, doc) {
+      if (!err) {
+        resolve(doc.impulseToken)
+      } else {
+        reject();
       }
     })
   })
@@ -511,6 +526,8 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
   var assetsContract = web3.eth.contract(smartContracts.assets.abi);
   var assets = assetsContract.at(network.assetsContractAddress);
 
+  let impulseToken = await getImpulseToken()
+
   /*
       1. If private
       2. Write to Impulse
@@ -570,6 +587,9 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
               request({
                 url: `${Config.getImpulseURL()}/writeObject`,
                 method: "POST",
+                headers: {
+                  token: impulseToken
+                },
                 json: {
                   publicKey: publicKey,
                   encryptedData: ciphertext,
@@ -709,11 +729,13 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
   }
 })
 
-app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
+app.post(`/assets/grantAccessToPrivateData`, async (req, res) => {
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
   var assetsContract = web3.eth.contract(smartContracts.assets.abi);
   var assets = assetsContract.at(network.assetsContractAddress);
+
+  let impulseToken = await getImpulseToken()
 
   /*
       1. Generate Re-Encryption Key
@@ -741,6 +763,9 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
           request({
             url: `${Config.getImpulseURL()}/writeKey`,
             method: "POST",
+            headers: {
+              token: impulseToken
+            },
             json: {
               ownerPublicKey: keyPair.compressed_public_key_hex,
               reEncryptionKey: kfrags,
@@ -809,6 +834,7 @@ app.post(`/assets/grantAccessToPrivateData`, (req, res) => {
 })
 
 app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
+  let impulseToken = await getImpulseToken()
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
   var assetsContract = web3.eth.contract(smartContracts.assets.abi);
@@ -836,6 +862,9 @@ app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
       request({
         url: `${Config.getImpulseURL()}/deleteKey`,
         method: "POST",
+        headers: {
+          token: impulseToken
+        },
         json: {
           ownerPublicKey: keyPair.compressed_public_key_hex,
           signature: signature,
@@ -1602,6 +1631,7 @@ app.post(`/streams/revokeAccessToPublish`, async (req, res) => {
 })
 
 app.post(`/streams/publish`, async (req, res) => {
+  let impulseToken = await getImpulseToken()
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
   var streamsContract = web3.eth.contract(smartContracts.streams.abi);
   var streams = streamsContract.at(network.streamsContractAddress);
@@ -1630,6 +1660,9 @@ app.post(`/streams/publish`, async (req, res) => {
             request({
               url: `${Config.getImpulseURL()}/writeObject`,
               method: "POST",
+              headers: {
+                token: impulseToken
+              },
               json: {
                 publicKey: compressed_public_key_hex,
                 encryptedData: ciphertext,
@@ -1670,6 +1703,9 @@ app.post(`/streams/publish`, async (req, res) => {
             request({
               url: `${Config.getImpulseURL()}/writeKey`,
               method: "POST",
+              headers: {
+                token: impulseToken
+              },
               json: {
                 ownerPublicKey: compressed_public_key_hex,
                 reEncryptionKey: kfrags,
@@ -2438,7 +2474,7 @@ app.post('/pre/storeEncrypted', async (req, res) => {
   let publicKey = req.body.publicKey;
   let text = req.body.text;
   let metadata = req.body.metadata;
-
+  let impulseToken = await getImpulseToken()
   let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
   text = base64.encode(JSON.stringify(text))
@@ -2457,6 +2493,9 @@ app.post('/pre/storeEncrypted', async (req, res) => {
       request({
         url: `${Config.getImpulseURL()}/writeObject`,
         method: "POST",
+        headers: {
+          token: impulseToken
+        },
         json: {
           publicKey: publicKey,
           encryptedData: ciphertext,
@@ -2496,7 +2535,7 @@ app.post('/pre/grantAccess', async (req, res) => {
   let compressed_publickey_hex = req.body.publicKey;
   let privateKey = req.body.privateKey;
   let otherUserPublicKey = req.body.toPublicKey;
-
+  let impulseToken = await getImpulseToken()
   exec('python3 /dynamo/apis/crypto-operations/generate-re-encryptkey.py ' + hexToBase64(privateKey) + " " + hexToBase64(otherUserPublicKey), (error, stdout, stderr) => {
     if (!error) {
       let kfrags = stdout
@@ -2507,6 +2546,9 @@ app.post('/pre/grantAccess', async (req, res) => {
       request({
         url: `${Config.getImpulseURL()}/writeKey`,
         method: "POST",
+        headers: {
+          token: impulseToken
+        },
         json: {
           ownerPublicKey: compressed_publickey_hex,
           reEncryptionKey: kfrags,
@@ -2545,6 +2587,7 @@ app.post('/pre/revokeAccess', async (req, res) => {
   let compressed_publickey_hex = req.body.publicKey;
   let privateKey = req.body.privateKey;
   let otherUserPublicKey = req.body.toPublicKey;
+  let impulseToken = await getImpulseToken()
 
   let signature = ec.sign(sha3.keccak256(compressed_publickey_hex), privateKey, "hex", {
     canonical: true
@@ -2553,6 +2596,9 @@ app.post('/pre/revokeAccess', async (req, res) => {
   request({
     url: `${Config.getImpulseURL()}/deleteKey`,
     method: "POST",
+    headers: {
+      token: impulseToken
+    },
     json: {
       ownerPublicKey: compressed_publickey_hex,
       signature: signature,
@@ -2622,6 +2668,7 @@ app.post('/pre/getData', async (req, res) => {
   let privateKey = req.body.privateKey;
   let ownerPublicKey = req.body.ownerPublicKey;
   let query = req.body.query;
+  let impulseToken = await getImpulseToken()
 
   let signature = ec.sign(sha3.keccak256(JSON.stringify(query)), privateKey, "hex", {
     canonical: true
@@ -2630,6 +2677,9 @@ app.post('/pre/getData', async (req, res) => {
   request({
     url: `${Config.getImpulseURL()}/query`,
     method: "POST",
+    headers: {
+      token: impulseToken
+    },
     json: {
       query: query,
       signature: signature,
