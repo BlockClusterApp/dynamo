@@ -833,7 +833,7 @@ app.post(`/assets/grantAccessToPrivateData`, async (req, res) => {
   })
 })
 
-app.post(`/assets/revokeAccessToPrivateData`, (req, res) => {
+app.post(`/assets/revokeAccessToPrivateData`, async (req, res) => {
   let impulseToken = await getImpulseToken()
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 
