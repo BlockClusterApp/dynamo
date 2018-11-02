@@ -264,15 +264,17 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                   var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
                                                   var impulse = impulseContract.at(process.env.impulseContractAddress);
 
+                                                  console.log(impulse)
+
                                                   impulse.verify.sendTransaction(token, {
                                                     from: web3.eth.accounts[0],
                                                     gas: '999999999999999999'
                                                   }, async (err, txnId) => {
+                                                    console.log(txid)
                                                     if(!err) {
                                                       for(;;) {
                                                         try {
                                                           await getTxnReceipt(txnId)
-
                                                           request({
                                                             url: `${Config.getImpulseURL()}/register`,
                                                             method: "POST",
@@ -286,14 +288,20 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                                   "impulseToken": body.message
                                                                 })
                                                               }
+                                                              console.log(body)
+                                                            } else {
+                                                              console.log(error)
                                                             }
                                                           })
 
                                                           break;
                                                         } catch(e) {
+                                                          console.log(e)
                                                           await new Promise(resolve => setTimeout(resolve, 3000));
                                                         }
                                                       }
+                                                    } else {
+                                                      console.log(err)
                                                     }
                                                   })
                                                 }
