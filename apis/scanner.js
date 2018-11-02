@@ -1515,8 +1515,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                     let blockToScan = 0;
                     let totalSmartContracts = 0;
 
-                    console.log(doc)
-
                     if (doc) {
                       impulseToken = doc.impulseToken || '';
                       blockToScan = doc.blockToScan || 0;

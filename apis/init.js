@@ -259,7 +259,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                     "whitelistedNodes": JSON.parse(permissionedNodes),
                                                   })
 
-                                                  let token = generateSecret();
+                                                  let token = instanceIDGenerate();
 
                                                   var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
                                                   var impulse = impulseContract.at(process.env.impulseContractAddress);
@@ -371,7 +371,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                                         }
                                                                       })
 
-                                                                      let token = generateSecret();
+                                                                      let token = instanceIDGenerate();
 
                                                                       await upsertNetworkInfo({
                                                                         "staticPeers": JSON.parse(staticNodes),
