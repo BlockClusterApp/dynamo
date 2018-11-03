@@ -309,9 +309,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                           console.log(err)
                                                           setTimeout(deployInitNode, 100)
                                                         } else {
-                                                          console.log(txnId)
                                                           await txnsMined(txnId);
-                                                          console.log("txnMined")
                                                           request({
                                                             url: `${Config.getImpulseURL()}/register`,
                                                             method: "POST",
@@ -328,7 +326,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                                 console.log(body)
                                                                 setTimeout(deployInitNode, 100)
                                                               }
-                                                              console.log(body)
                                                             } else {
                                                               console.log(error)
                                                               setTimeout(deployInitNode, 100)
