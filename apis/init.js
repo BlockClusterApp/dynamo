@@ -108,6 +108,28 @@ let getTxnReceipt = async (txnHash) => {
   });
 }
 
+let txnsMined = async (txns) => {
+  let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"));
+  if (typeof txns === 'string') txns = [txns];
+  const allReceipts = async () => {
+    const receipts = [];
+
+    txns.forEach(txn => {
+      receipts.push(getTxnReceipt(txn));
+    });
+
+    try {
+      await Promise.all(receipts);
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await allReceipts();
+    }
+  };
+
+  await allReceipts();
+  return Promise.resolve();
+}
+
 MongoClient.connect(Config.getMongoConnectionString(), {
   reconnectTries: Number.MAX_VALUE,
   autoReconnect: true
@@ -174,107 +196,121 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                           safe: false
                         }, function(err, res) {
                           if (!err) {
-                            let firstAccPass = instanceIDGenerate();
-
-                            web3.currentProvider.sendAsync({
-                              method: "personal_newAccount",
-                              params: [firstAccPass],
-                              jsonrpc: "2.0",
-                              id: new Date().getTime()
-                            }, async (error, result) => {
-                              try {
-                                await upsertAccounts({
-                                  instanceId: instanceId,
-                                  address: result.result,
-                                  name: "Default"
-                                }, {
-                                  password: firstAccPass
-                                })
+                            localDB.collection("contracts").updateOne({
+                              name: "Impulse"
+                            }, {
+                              $set: {
+                                abi: smartContracts.impulse.abi,
+                                bytecode: smartContracts.impulse.bytecode,
+                                abiHash: sha3.keccak256(JSON.stringify(smartContracts.impulse.abi)),
+                                bytecodeHash: sha3.keccak256(JSON.stringify(smartContracts.impulse.bytecode))
+                              }
+                            }, {
+                              upsert: true,
+                              safe: false
+                            }, function(err, res) {
+                              if (!err) {
+                                let firstAccPass = instanceIDGenerate();
 
                                 web3.currentProvider.sendAsync({
-                                  method: "personal_unlockAccount",
-                                  params: [result.result, firstAccPass, 0],
+                                  method: "personal_newAccount",
+                                  params: [firstAccPass],
                                   jsonrpc: "2.0",
                                   id: new Date().getTime()
-                                }, (error) => {
-                                  if (!error) {
-
-                                    var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
-                                    var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
-                                    var staticNodes = fs.readFileSync('/dynamo/bcData/node/static-nodes.json', 'utf8');
-                                    var permissionedNodes = fs.readFileSync('/dynamo/bcData/node/permissioned-nodes.json', 'utf8');
+                                }, async (error, result) => {
+                                  try {
+                                    await upsertAccounts({
+                                      instanceId: instanceId,
+                                      address: result.result,
+                                      name: "Default"
+                                    }, {
+                                      password: firstAccPass
+                                    })
 
                                     web3.currentProvider.sendAsync({
-                                      method: "admin_nodeInfo",
-                                      params: [],
+                                      method: "personal_unlockAccount",
+                                      params: [result.result, firstAccPass, 0],
                                       jsonrpc: "2.0",
                                       id: new Date().getTime()
-                                    }, (error, result) => {
+                                    }, (error) => {
                                       if (!error) {
-                                        var nodeId = result.result.id;
+
+                                        var genesis = fs.readFileSync('/dynamo/bcData/node/genesis.json', 'utf8');
+                                        var nodekey = fs.readFileSync('/dynamo/bcData/node/geth/nodekey', 'utf8');
+                                        var staticNodes = fs.readFileSync('/dynamo/bcData/node/static-nodes.json', 'utf8');
+                                        var permissionedNodes = fs.readFileSync('/dynamo/bcData/node/permissioned-nodes.json', 'utf8');
+
                                         web3.currentProvider.sendAsync({
-                                          method: "istanbul_getValidators",
+                                          method: "admin_nodeInfo",
                                           params: [],
                                           jsonrpc: "2.0",
                                           id: new Date().getTime()
-                                        }, function(error, result) {
-                                          if (error) {
-                                            console.log(error)
-                                            setTimeout(deployInitNode, 100)
-                                          } else {
-                                            let currentValidators = result.result;
+                                        }, (error, result) => {
+                                          if (!error) {
+                                            var nodeId = result.result.id;
+                                            web3.currentProvider.sendAsync({
+                                              method: "istanbul_getValidators",
+                                              params: [],
+                                              jsonrpc: "2.0",
+                                              id: new Date().getTime()
+                                            }, function(error, result) {
+                                              if (error) {
+                                                console.log(error)
+                                                setTimeout(deployInitNode, 100)
+                                              } else {
+                                                let currentValidators = result.result;
 
-                                            let wallet = Wallet.generate();
-                                            let private_key_hex = wallet.getPrivateKey().toString("hex");
-                                            let private_key_base64 = wallet.getPrivateKey().toString("base64");
-                                            let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
-                                            let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
+                                                let wallet = Wallet.generate();
+                                                let private_key_hex = wallet.getPrivateKey().toString("hex");
+                                                let private_key_base64 = wallet.getPrivateKey().toString("base64");
+                                                let compressed_public_key_hex = EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex"))
+                                                let compressed_public_key_base64 = Buffer.from(EthCrypto.publicKey.compress(wallet.getPublicKey().toString("hex")), 'hex').toString("base64")
 
-                                            if (process.env.assetsContractAddress && process.env.atomicSwapContractAddress && process.env.streamsContractAddress && process.env.impulseContractAddress) {
-                                              web3.eth.getBlock(0, async (error, block) => {
-                                                if (error) {
-                                                  console.log(error)
-                                                  setTimeout(deployInitNode, 100)
-                                                } else {
-                                                  await upsertNetwork({
-                                                    instanceId: instanceId,
-                                                  }, {
-                                                    "status": "running",
-                                                    "genesisBlockHash": block.hash,
-                                                    "genesisBlock": genesis,
-                                                    "impulse": {
-                                                      privateKey: private_key_hex,
-                                                      publicKey: compressed_public_key_hex
-                                                    },
-                                                    "nodeId": nodeId,
-                                                    "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
-                                                    "assetsContractAddress": process.env.assetsContractAddress,
-                                                    "atomicSwapContractAddress": process.env.atomicSwapContractAddress,
-                                                    "streamsContractAddress": process.env.streamsContractAddress,
-                                                    "impulseContractAddress": process.env.impulseContractAddress
-                                                  })
+                                                if (process.env.assetsContractAddress && process.env.atomicSwapContractAddress && process.env.streamsContractAddress && process.env.impulseContractAddress) {
+                                                  web3.eth.getBlock(0, async (error, block) => {
+                                                    if (error) {
+                                                      console.log(error)
+                                                      setTimeout(deployInitNode, 100)
+                                                    } else {
+                                                      await upsertNetwork({
+                                                        instanceId: instanceId,
+                                                      }, {
+                                                        "status": "running",
+                                                        "genesisBlockHash": block.hash,
+                                                        "genesisBlock": genesis,
+                                                        "impulse": {
+                                                          privateKey: private_key_hex,
+                                                          publicKey: compressed_public_key_hex
+                                                        },
+                                                        "nodeId": nodeId,
+                                                        "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
+                                                        "assetsContractAddress": process.env.assetsContractAddress,
+                                                        "atomicSwapContractAddress": process.env.atomicSwapContractAddress,
+                                                        "streamsContractAddress": process.env.streamsContractAddress,
+                                                        "impulseContractAddress": process.env.impulseContractAddress
+                                                      })
 
-                                                  await upsertNetworkInfo({
-                                                    "staticPeers": JSON.parse(staticNodes),
-                                                    "whitelistedNodes": JSON.parse(permissionedNodes),
-                                                  })
+                                                      await upsertNetworkInfo({
+                                                        "staticPeers": JSON.parse(staticNodes),
+                                                        "whitelistedNodes": JSON.parse(permissionedNodes),
+                                                      })
 
-                                                  let token = instanceIDGenerate();
+                                                      let token = instanceIDGenerate();
 
-                                                  var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
-                                                  var impulse = impulseContract.at(process.env.impulseContractAddress);
+                                                      var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
+                                                      var impulse = impulseContract.at(process.env.impulseContractAddress);
 
-                                                  console.log(impulse)
-
-                                                  impulse.verify.sendTransaction(token, {
-                                                    from: web3.eth.accounts[0],
-                                                    gas: '999999999999999999'
-                                                  }, async (err, txnId) => {
-                                                    console.log(txid)
-                                                    if(!err) {
-                                                      for(;;) {
-                                                        try {
-                                                          await getTxnReceipt(txnId)
+                                                      impulse.verify.sendTransaction(token, {
+                                                        from: web3.eth.accounts[0],
+                                                        gas: '999999999999999999'
+                                                      }, async (err, txnId) => {
+                                                        if(err) {
+                                                          console.log(err)
+                                                          setTimeout(deployInitNode, 100)
+                                                        } else {
+                                                          console.log(txnId)
+                                                          await txnsMined(txnId);
+                                                          console.log("txnMined")
                                                           request({
                                                             url: `${Config.getImpulseURL()}/register`,
                                                             method: "POST",
@@ -287,120 +323,121 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                                 await upsertNetworkInfo({
                                                                   "impulseToken": body.message
                                                                 })
+                                                              } else {
+                                                                console.log(body)
+                                                                setTimeout(deployInitNode, 100)
                                                               }
                                                               console.log(body)
                                                             } else {
                                                               console.log(error)
+                                                              setTimeout(deployInitNode, 100)
                                                             }
                                                           })
-
-                                                          break;
-                                                        } catch(e) {
-                                                          console.log(e)
-                                                          await new Promise(resolve => setTimeout(resolve, 3000));
                                                         }
-                                                      }
+
+                                                      })
+                                                    }
+                                                  })
+                                                } else {
+                                                  var assetsContract = web3.eth.contract(smartContracts.assets.abi);
+
+                                                  var assets = assetsContract.new({
+                                                    from: web3.eth.accounts[0],
+                                                    data: smartContracts.assets.bytecode,
+                                                    gas: '999999999999999999'
+                                                  }, function(error, contract) {
+                                                    if (error) {
+                                                      console.log(error)
+                                                      setTimeout(deployInitNode, 100)
                                                     } else {
-                                                      console.log(err)
+                                                      if (typeof contract.address !== 'undefined') {
+                                                        var assetsContractAddress = contract.address;
+
+                                                        var assetsContractAddress = contract.address;
+                                                        var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
+                                                        var atomicSwap = atomicSwapContract.new(assetsContractAddress, {
+                                                          from: web3.eth.accounts[0],
+                                                          data: smartContracts.atomicSwap.bytecode,
+                                                          gas: '999999999999999999'
+                                                        }, (error, contract) => {
+                                                          if (error) {
+                                                            console.log(error)
+                                                            setTimeout(deployInitNode, 100)
+                                                          } else {
+                                                            if (typeof contract.address !== 'undefined') {
+                                                              var atomicSwapContractAddress = contract.address;
+                                                              var streamsContract = web3.eth.contract(smartContracts.streams.abi);
+                                                              var streams = streamsContract.new({
+                                                                from: web3.eth.accounts[0],
+                                                                data: smartContracts.streams.bytecode,
+                                                                gas: '999999999999999999'
+                                                              }, (error, contract) => {
+                                                                if (error) {
+                                                                  console.log(error)
+                                                                  setTimeout(deployInitNode, 100)
+                                                                } else {
+                                                                  if (typeof contract.address !== 'undefined') {
+                                                                    var streamsContractAddress = contract.address;
+
+                                                                    var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
+                                                                    var streams = streamsContract.new({
+                                                                      from: web3.eth.accounts[0],
+                                                                      data: smartContracts.impulse.bytecode,
+                                                                      gas: '999999999999999999'
+                                                                    }, (error, contract) => {
+                                                                      var impulseContractAddress = contract.address;
+
+                                                                      web3.eth.getBlock(0, async (error, block) => {
+                                                                        if (error) {
+                                                                          console.log(error)
+                                                                          setTimeout(deployInitNode, 100)
+                                                                        } else {
+                                                                          await upsertNetwork({
+                                                                            instanceId: instanceId,
+                                                                          }, {
+                                                                            "assetsContractAddress": assetsContractAddress,
+                                                                            "atomicSwapContractAddress": atomicSwapContractAddress,
+                                                                            "streamsContractAddress": streamsContractAddress,
+                                                                            "impulseContractAddress": impulseContractAddress,
+                                                                            "genesisBlockHash": block.hash,
+                                                                            "genesisBlock": genesis,
+                                                                            "nodeKey": nodekey,
+                                                                            "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
+                                                                            "nodeId": nodeId,
+                                                                            "status": "running",
+                                                                            "impulse": {
+                                                                              privateKey: private_key_hex,
+                                                                              publicKey: compressed_public_key_hex
+                                                                            }
+                                                                          })
+
+                                                                          let token = instanceIDGenerate();
+
+                                                                          await upsertNetworkInfo({
+                                                                            "staticPeers": JSON.parse(staticNodes),
+                                                                            "whitelistedNodes": JSON.parse(permissionedNodes),
+                                                                            "impulseToken": token
+                                                                          })
+
+                                                                          await insertToken(token)
+                                                                        }
+                                                                      })
+                                                                    })
+                                                                  }
+                                                                }
+                                                              })
+                                                            }
+                                                          }
+                                                        })
+                                                      }
                                                     }
                                                   })
                                                 }
-                                              })
-                                            } else {
-                                              var assetsContract = web3.eth.contract(smartContracts.assets.abi);
-
-                                              var assets = assetsContract.new({
-                                                from: web3.eth.accounts[0],
-                                                data: smartContracts.assets.bytecode,
-                                                gas: '999999999999999999'
-                                              }, function(error, contract) {
-                                                if (error) {
-                                                  console.log(error)
-                                                  setTimeout(deployInitNode, 100)
-                                                } else {
-                                                  if (typeof contract.address !== 'undefined') {
-                                                    var assetsContractAddress = contract.address;
-
-                                                    var assetsContractAddress = contract.address;
-                                                    var atomicSwapContract = web3.eth.contract(smartContracts.atomicSwap.abi);
-                                                    var atomicSwap = atomicSwapContract.new(assetsContractAddress, {
-                                                      from: web3.eth.accounts[0],
-                                                      data: smartContracts.atomicSwap.bytecode,
-                                                      gas: '999999999999999999'
-                                                    }, (error, contract) => {
-                                                      if (error) {
-                                                        console.log(error)
-                                                        setTimeout(deployInitNode, 100)
-                                                      } else {
-                                                        if (typeof contract.address !== 'undefined') {
-                                                          var atomicSwapContractAddress = contract.address;
-                                                          var streamsContract = web3.eth.contract(smartContracts.streams.abi);
-                                                          var streams = streamsContract.new({
-                                                            from: web3.eth.accounts[0],
-                                                            data: smartContracts.streams.bytecode,
-                                                            gas: '999999999999999999'
-                                                          }, (error, contract) => {
-                                                            if (error) {
-                                                              console.log(error)
-                                                              setTimeout(deployInitNode, 100)
-                                                            } else {
-                                                              if (typeof contract.address !== 'undefined') {
-                                                                var streamsContractAddress = contract.address;
-
-                                                                var impulseContract = web3.eth.contract(smartContracts.impulse.abi);
-                                                                var streams = streamsContract.new({
-                                                                  from: web3.eth.accounts[0],
-                                                                  data: smartContracts.impulse.bytecode,
-                                                                  gas: '999999999999999999'
-                                                                }, (error, contract) => {
-                                                                  var impulseContractAddress = contract.address;
-
-                                                                  web3.eth.getBlock(0, async (error, block) => {
-                                                                    if (error) {
-                                                                      console.log(error)
-                                                                      setTimeout(deployInitNode, 100)
-                                                                    } else {
-                                                                      await upsertNetwork({
-                                                                        instanceId: instanceId,
-                                                                      }, {
-                                                                        "assetsContractAddress": assetsContractAddress,
-                                                                        "atomicSwapContractAddress": atomicSwapContractAddress,
-                                                                        "streamsContractAddress": streamsContractAddress,
-                                                                        "impulseContractAddress": impulseContractAddress,
-                                                                        "genesisBlockHash": block.hash,
-                                                                        "genesisBlock": genesis,
-                                                                        "nodeKey": nodekey,
-                                                                        "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
-                                                                        "nodeId": nodeId,
-                                                                        "status": "running",
-                                                                        "impulse": {
-                                                                          privateKey: private_key_hex,
-                                                                          publicKey: compressed_public_key_hex
-                                                                        }
-                                                                      })
-
-                                                                      let token = instanceIDGenerate();
-
-                                                                      await upsertNetworkInfo({
-                                                                        "staticPeers": JSON.parse(staticNodes),
-                                                                        "whitelistedNodes": JSON.parse(permissionedNodes),
-                                                                        "impulseToken": token
-                                                                      })
-
-                                                                      await insertToken(token)
-                                                                    }
-                                                                  })
-                                                                })
-                                                              }
-                                                            }
-                                                          })
-                                                        }
-                                                      }
-                                                    })
-                                                  }
-                                                }
-                                              })
-                                            }
+                                              }
+                                            })
+                                          } else {
+                                            console.log(error)
+                                            setTimeout(deployInitNode, 100)
                                           }
                                         })
                                       } else {
@@ -408,28 +445,28 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                         setTimeout(deployInitNode, 100)
                                       }
                                     })
-                                  } else {
-                                    console.log(error)
+                                  } catch (e) {
+                                    console.log(e)
                                     setTimeout(deployInitNode, 100)
                                   }
                                 })
-                              } catch (e) {
-                                console.log(e)
+                              } else {
+                                console.log(error)
                                 setTimeout(deployInitNode, 100)
                               }
                             })
                           } else {
-                            console.log(error)
+                            console.log(err)
                             setTimeout(deployInitNode, 100)
                           }
                         });
                       } else {
-                        console.log(error)
+                        console.log(err)
                         setTimeout(deployInitNode, 100)
                       }
                     });
                   } else {
-                    console.log(error)
+                    console.log(err)
                     setTimeout(deployInitNode, 100)
                   }
                 });

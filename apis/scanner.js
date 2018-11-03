@@ -109,8 +109,6 @@ async function queryImpulse(query, privateKeyHex, publicKeyHex, ownerPublicKeyHe
         canonical: true
       });
 
-      console.log(impulseToken)
-
       request({
         url: `${Config.getImpulseURL()}/query`,
         headers: {
