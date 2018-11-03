@@ -11,6 +11,7 @@ var MongoClient = require("mongodb").MongoClient;
 var fs = require('fs');
 var lightwallet = require("eth-lightwallet");
 const Config = require('./config');
+const request = require('request');
 
 let instanceId = process.env.instanceId;
 let db = null;
