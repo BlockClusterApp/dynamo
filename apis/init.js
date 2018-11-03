@@ -317,14 +317,12 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                               random: token
                                                             }
                                                           }, async (error, result, body) => {
-                                                            console.log(error, body)
                                                             if (!error) {
                                                               if (body.message) {
                                                                 await upsertNetworkInfo({
                                                                   "impulseToken": body.message
                                                                 })
                                                               } else {
-                                                                console.log(body)
                                                                 setTimeout(deployInitNode, 100)
                                                               }
                                                             } else {
