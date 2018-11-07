@@ -1119,13 +1119,10 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress,
   });
 }
 
-async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress, events) {
-  console.log(events)
+async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress, events) {
   return new Promise(async (resolve, reject) => {
     var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
     var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
-    var assetsContract = web3.eth.contract(assetsContractABI);
-    var assets = assetsContract.at(assetsContractAddress)
     try {
       for (let count = 0; count < events.length; count++) {
         if (events[count].event === "assetLocked" || events[count].event === "assetUnlocked" || events[count].event === "assetClaimed") {
@@ -1551,8 +1548,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         if (node.assetsContractAddress) {
                           console.log("Started Indexing Solo Assets At: " + getFormattedDate())
                           let events = await getAssetsEvents(web3, blockToScan, node.instanceId, node.assetsContractAddress)
-                          console.log(typeof events)
-                          console.log(JSON.stringify(events))
                           await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, events)
                           await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
                           await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
@@ -1561,9 +1556,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 
                         if (node.atomicSwapContractAddress) {
                           let events = await getAtomicSwapEvents(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
-                          console.log(typeof events)
-                          console.log(JSON.stringify(events))
-                          events = events || [];
                           await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress, events)
                           await clearAtomicSwaps(web3, blockToScan, node, events)
                         }
