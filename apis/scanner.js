@@ -518,7 +518,7 @@ async function getAssetsEvents(web3, blockNumber, instanceId, assetsContractAddr
   })
 }
 
-async function getAtomicSwapEvents(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress, events) {
+async function getAtomicSwapEvents(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress) {
   return new Promise((resolve, reject) => {
     var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
     var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
@@ -532,6 +532,7 @@ async function getAtomicSwapEvents(web3, blockNumber, instanceId, atomicSwapCont
       if (error) {
         reject(error);
       } else {
+        console.log("event: " + events)
         resolve(events);
       }
     })
