@@ -561,126 +561,129 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
     var assetsContract = web3.eth.contract(
       assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "soloAssetIssued") {
-        try {
-          await upsertSoloAsset({
-            assetName: events[count].args.assetName,
-            uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
-          }, {
-            owner: events[count].args.to,
-            status: "open"
-          })
-        } catch (e) {
-          reject(e)
-          return;
-        }
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "soloAssetIssued") {
+          try {
+            await upsertSoloAsset({
+              assetName: events[count].args.assetName,
+              uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+            }, {
+              owner: events[count].args.to,
+              status: "open"
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
 
-      } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
-        try {
-          console.log("Writing Single Date Started At: " + getFormattedDate())
-          await upsertSoloAsset({
-            assetName: events[count].args.assetName,
-            uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
-          }, {
-            [events[count].args.key]: parseAndConvertData(events[count].args.value)
-          })
-          console.log("Writing Single Date Ended At: " + getFormattedDate())
-        } catch (e) {
-          reject(e)
-          return;
-        }
-      } else if (events[count].event === "addedOrUpdatedEncryptedDataObjectHash") {
+        } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
+          try {
+            await upsertSoloAsset({
+              assetName: events[count].args.assetName,
+              uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+            }, {
+              [events[count].args.key]: parseAndConvertData(events[count].args.value)
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
+        } else if (events[count].event === "addedOrUpdatedEncryptedDataObjectHash") {
 
-        async function fetchAndWriteEncryptedData(assetName, uniqueAssetIdentifier, encryptedDataHash, privateKey, publicKey, ownerPublicKey) {
-          //you are the owner
-          let dataObj = await queryImpulse({
-            "metadata.assetName": assetName,
-            "metadata.assetType": "solo",
-            "metadata.identifier": uniqueAssetIdentifier,
-            "encryptedDataHash": encryptedDataHash
-          }, privateKey, publicKey, ownerPublicKey);
+          async function fetchAndWriteEncryptedData(assetName, uniqueAssetIdentifier, encryptedDataHash, privateKey, publicKey, ownerPublicKey) {
+            //you are the owner
+            let dataObj = await queryImpulse({
+              "metadata.assetName": assetName,
+              "metadata.assetType": "solo",
+              "metadata.identifier": uniqueAssetIdentifier,
+              "encryptedDataHash": encryptedDataHash
+            }, privateKey, publicKey, ownerPublicKey);
 
-          for (let iii = 0; iii < dataObj.queryResult.length; iii++) {
-            let cipherText = dataObj.queryResult[iii].encryptedData;
-            let capsule = dataObj.queryResult[iii].capsule;
-            let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
+            for (let iii = 0; iii < dataObj.queryResult.length; iii++) {
+              let cipherText = dataObj.queryResult[iii].encryptedData;
+              let capsule = dataObj.queryResult[iii].capsule;
+              let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
-            if (plainObj) {
-              await upsertSoloAsset({
-                assetName: assetName,
-                uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
-              }, {
-                [plainObj.key]: parseAndConvertData(plainObj.value)
-              })
+              if (plainObj) {
+                await upsertSoloAsset({
+                  assetName: assetName,
+                  uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
+                }, {
+                  [plainObj.key]: parseAndConvertData(plainObj.value)
+                })
+              }
             }
           }
-        }
 
-        try {
-          let publicKeyOwner = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
-          let keyPair = await searchEncryptionKey({
-            compressed_public_key_hex: publicKeyOwner
-          })
+          try {
+            let publicKeyOwner = assets.getSoloAssetDetails.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier)[2]
+            let keyPair = await searchEncryptionKey({
+              compressed_public_key_hex: publicKeyOwner
+            })
 
-          //check if you are issuer of data
-          if (keyPair) {
-            fetchAndWriteEncryptedData(
-              events[count].args.assetName,
-              events[count].args.uniqueAssetIdentifier,
-              events[count].args.hash,
-              keyPair.private_key_hex,
-              keyPair.compressed_public_key_hex,
-              keyPair.compressed_public_key_hex
-            )
-
-          } else {
-            //see if you have access
-            let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, hexToBase64(impulse.publicKey))
-
-            if (hasAccess) {
-              let privateKey = impulse.privateKey;
-              let publicKey = impulse.publicKey;
-
+            //check if you are issuer of data
+            if (keyPair) {
               fetchAndWriteEncryptedData(
                 events[count].args.assetName,
                 events[count].args.uniqueAssetIdentifier,
                 events[count].args.hash,
-                privateKey,
-                publicKey,
-                publicKeyOwner
+                keyPair.private_key_hex,
+                keyPair.compressed_public_key_hex,
+                keyPair.compressed_public_key_hex
               )
+
+            } else {
+              //see if you have access
+              let hasAccess = assets.hasSoloAssetEncryptedDataAccess.call(events[count].args.assetName, events[count].args.uniqueAssetIdentifier, hexToBase64(impulse.publicKey))
+
+              if (hasAccess) {
+                let privateKey = impulse.privateKey;
+                let publicKey = impulse.publicKey;
+
+                fetchAndWriteEncryptedData(
+                  events[count].args.assetName,
+                  events[count].args.uniqueAssetIdentifier,
+                  events[count].args.hash,
+                  privateKey,
+                  publicKey,
+                  publicKeyOwner
+                )
+              }
             }
+          } catch (e) {
+            reject(e)
+            return;
           }
-        } catch (e) {
-          reject(e)
-          return;
-        }
-      } else if (events[count].event === "transferredOwnershipOfSoloAsset") {
-        try {
-          await upsertSoloAsset({
-            assetName: events[count].args.assetName,
-            uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
-          }, {
-            owner: events[count].args.to
-          })
-        } catch (e) {
-          reject(e)
-          return;
-        }
-      } else if (events[count].event === "closedSoloAsset") {
-        try {
-          await upsertSoloAsset({
-            assetName: events[count].args.assetName,
-            uniqueIdentifier: parseAndConvertData(events[count].args.uniqueIdentifier)
-          }, {
-            status: "closed"
-          })
-        } catch (e) {
-          reject(e)
-          return;
+        } else if (events[count].event === "transferredOwnershipOfSoloAsset") {
+          try {
+            await upsertSoloAsset({
+              assetName: events[count].args.assetName,
+              uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+            }, {
+              owner: events[count].args.to
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
+        } else if (events[count].event === "closedSoloAsset") {
+          try {
+            await upsertSoloAsset({
+              assetName: events[count].args.assetName,
+              uniqueIdentifier: parseAndConvertData(events[count].args.uniqueIdentifier)
+            }, {
+              status: "closed"
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
         }
       }
+      resolve();
+    } catch (e) {
+      reject(e)
     }
   });
 }
@@ -1026,87 +1029,93 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress,
   return new Promise(async (resolve, reject) => {
     var assetsContract = web3.eth.contract(assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "bulkAssetTypeCreated") {
+          await upsertAssetTypes({
+            type: "bulk",
+            assetName: events[count].args.assetName
+          }, {
+            uniqueIdentifier: events[count].args.uniqueIdentifier,
+            admin: events[count].args.admin,
+            units: 0,
+            parts: events[count].args.parts.toString(),
+            description: events[count].args.description
+          })
 
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "bulkAssetTypeCreated") {
-        await upsertAssetTypes({
-          type: "bulk",
-          assetName: events[count].args.assetName
-        }, {
-          uniqueIdentifier: events[count].args.uniqueIdentifier,
-          admin: events[count].args.admin,
-          units: 0,
-          parts: events[count].args.parts.toString(),
-          description: events[count].args.description
-        })
+          await notifyClient({
+            type: "bulk",
+            assetName: events[count].args.assetName,
+            uniqueIdentifier: events[count].args.uniqueIdentifier,
+            admin: events[count].args.admin,
+            units: 0,
+            parts: events[count].args.parts.toString(),
+            eventHash: sha256(JSON.stringify(events[count])),
+            eventName: "bulkAssetTypeCreated",
+            transactionHash: events[count].transactionHash,
+            description: events[count].args.description,
+            timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+          })
+        } else if (events[count].event === "bulkAssetsIssued") {
+          await upsertAssetTypes({
+            type: "bulk",
+            assetName: events[count].args.assetName
+          }, {
+            type: "bulk"
+          }, {
+            units: events[count].args.units.toNumber()
+          })
 
-        await notifyClient({
-          type: "bulk",
-          assetName: events[count].args.assetName,
-          uniqueIdentifier: events[count].args.uniqueIdentifier,
-          admin: events[count].args.admin,
-          units: 0,
-          parts: events[count].args.parts.toString(),
-          eventHash: sha256(JSON.stringify(events[count])),
-          eventName: "bulkAssetTypeCreated",
-          transactionHash: events[count].transactionHash,
-          description: events[count].args.description,
-          timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-        })
-      } else if (events[count].event === "bulkAssetsIssued") {
-        await upsertAssetTypes({
-          type: "bulk",
-          assetName: events[count].args.assetName
-        }, {
-          type: "bulk"
-        }, {
-          units: events[count].args.units.toNumber()
-        })
+          var parts = assets.getBulkAssetParts.call(events[count].args.assetName)
 
-        var parts = assets.getBulkAssetParts.call(events[count].args.assetName)
+          await notifyClient({
+            type: "bulk",
+            assetName: events[count].args.assetName,
+            units: (new BigNumber(events[count].args.units.toNumber())).dividedBy(addZeros(1, parts)).toFixed(parseInt(parts)).toString(),
+            eventHash: sha256(JSON.stringify(events[count])),
+            eventName: "bulkAssetsIssued",
+            transactionHash: events[count].transactionHash,
+            timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+          })
+        } else if (events[count].event === "soloAssetTypeCreated") {
+          await upsertAssetTypes({
+            type: "solo",
+            assetName: events[count].args.assetName
+          }, {
+            uniqueIdentifier: events[count].args.uniqueIdentifier,
+            admin: events[count].args.authorizedIssuer,
+            description: events[count].args.description,
+            units: 0
+          })
 
-        await notifyClient({
-          type: "bulk",
-          assetName: events[count].args.assetName,
-          units: (new BigNumber(events[count].args.units.toNumber())).dividedBy(addZeros(1, parts)).toFixed(parseInt(parts)).toString(),
-          eventHash: sha256(JSON.stringify(events[count])),
-          eventName: "bulkAssetsIssued",
-          transactionHash: events[count].transactionHash,
-          timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-        })
-      } else if (events[count].event === "soloAssetTypeCreated") {
-        await upsertAssetTypes({
-          type: "solo",
-          assetName: events[count].args.assetName
-        }, {
-          uniqueIdentifier: events[count].args.uniqueIdentifier,
-          admin: events[count].args.authorizedIssuer,
-          description: events[count].args.description,
-          units: 0
-        })
-
-        await notifyClient({
-          type: "solo",
-          assetName: events[count].args.assetName,
-          uniqueIdentifier: events[count].args.uniqueIdentifier,
-          admin: events[count].args.authorizedIssuer,
-          eventHash: sha256(JSON.stringify(events[count])),
-          eventName: "soloAssetTypeCreated",
-          description: events[count].args.description,
-          transactionHash: events[count].transactionHash,
-          timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-        })
-      } else if (events[count].event === "soloAssetIssued") {
-        await upsertAssetTypes({
-          type: "solo",
-          assetName: events[count].args.assetName
-        }, {
-          type: "solo"
-        }, {
-          units: 1
-        })
+          await notifyClient({
+            type: "solo",
+            assetName: events[count].args.assetName,
+            uniqueIdentifier: events[count].args.uniqueIdentifier,
+            admin: events[count].args.authorizedIssuer,
+            eventHash: sha256(JSON.stringify(events[count])),
+            eventName: "soloAssetTypeCreated",
+            description: events[count].args.description,
+            transactionHash: events[count].transactionHash,
+            timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+          })
+        } else if (events[count].event === "soloAssetIssued") {
+          await upsertAssetTypes({
+            type: "solo",
+            assetName: events[count].args.assetName
+          }, {
+            type: "solo"
+          }, {
+            units: 1
+          })
+        }
       }
+
+      resolve();
+    } catch (e) {
+      reject(e)
     }
+
   });
 }
 
@@ -1116,63 +1125,69 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
     var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
     var assetsContract = web3.eth.contract(assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress)
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "assetLocked" || events[count].event === "assetUnlocked" || events[count].event === "assetClaimed") {
-        let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
-        let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
-        let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
-        let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
-        let lockPeriod = atomicSwap.atomicSwapLockPeriod.call(events[count].args.hash);
-        try {
-          await upsertOrder({
-            instanceId: instanceId,
-            atomicSwapHash: events[count].args.hash
-          }, {
-            fromAddress: atomicSwapDetails[0],
-            toAddress: atomicSwapDetails[1],
-            fromAssetType: atomicSwapDetails[2],
-            fromAssetName: atomicSwapDetails[3],
-            fromAssetUnits: atomicSwapDetails[4].toString(),
-            fromAssetParts: atomicSwapDetails[5].toString(),
-            fromAssetId: atomicSwapDetails[6],
-            fromLockPeriod: lockPeriod.toString(),
-            toAssetType: atomicSwapOtherChainDetails[0],
-            toAssetName: atomicSwapOtherChainDetails[1],
-            toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
-            toAssetParts: atomicSwapOtherChainDetails[3].toString(),
-            toAssetId: atomicSwapOtherChainDetails[4],
-            toGenesisBlockHash: atomicSwapOtherChainDetails[5],
-            status: atomicSwapStatus.toString(),
-            secret: atomicSwapSecret
-          })
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "assetLocked" || events[count].event === "assetUnlocked" || events[count].event === "assetClaimed") {
+          let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
+          let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
+          let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
+          let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
+          let lockPeriod = atomicSwap.atomicSwapLockPeriod.call(events[count].args.hash);
+          try {
+            await upsertOrder({
+              instanceId: instanceId,
+              atomicSwapHash: events[count].args.hash
+            }, {
+              fromAddress: atomicSwapDetails[0],
+              toAddress: atomicSwapDetails[1],
+              fromAssetType: atomicSwapDetails[2],
+              fromAssetName: atomicSwapDetails[3],
+              fromAssetUnits: atomicSwapDetails[4].toString(),
+              fromAssetParts: atomicSwapDetails[5].toString(),
+              fromAssetId: atomicSwapDetails[6],
+              fromLockPeriod: lockPeriod.toString(),
+              toAssetType: atomicSwapOtherChainDetails[0],
+              toAssetName: atomicSwapOtherChainDetails[1],
+              toAssetUnits: atomicSwapOtherChainDetails[2].toString(),
+              toAssetParts: atomicSwapOtherChainDetails[3].toString(),
+              toAssetId: atomicSwapOtherChainDetails[4],
+              toGenesisBlockHash: atomicSwapOtherChainDetails[5],
+              status: atomicSwapStatus.toString(),
+              secret: atomicSwapSecret
+            })
 
-          await notifyClient({
-            instanceId: instanceId,
-            atomicSwapHash: events[count].args.hash,
-            fromAddress: atomicSwapDetails[0],
-            toAddress: atomicSwapDetails[1],
-            fromAssetType: atomicSwapDetails[2],
-            fromAssetName: atomicSwapDetails[3],
-            fromAssetUnits: (new BigNumber(atomicSwapDetails[4].toString())).dividedBy(addZeros(1, atomicSwapDetails[5].toString())).toFixed(parseInt(atomicSwapDetails[5].toString())).toString(),
-            fromAssetId: atomicSwapDetails[6],
-            fromLockPeriod: lockPeriod.toString(),
-            toAssetType: atomicSwapOtherChainDetails[0],
-            toAssetName: atomicSwapOtherChainDetails[1],
-            toAssetUnits: (new BigNumber(atomicSwapOtherChainDetails[2].toString())).dividedBy(addZeros(1, atomicSwapOtherChainDetails[3].toString())).toFixed(parseInt(atomicSwapOtherChainDetails[3].toString())).toString(),
-            toAssetId: atomicSwapOtherChainDetails[4],
-            toGenesisBlockHash: atomicSwapOtherChainDetails[5],
-            status: atomicSwapStatus.toString(),
-            secret: atomicSwapSecret,
-            eventHash: sha256(JSON.stringify(events[count])),
-            eventName: "assetLocked",
-            transactionHash: events[count].transactionHash,
-            timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-          })
-        } catch (e) {
-          reject(e)
-          return;
+            await notifyClient({
+              instanceId: instanceId,
+              atomicSwapHash: events[count].args.hash,
+              fromAddress: atomicSwapDetails[0],
+              toAddress: atomicSwapDetails[1],
+              fromAssetType: atomicSwapDetails[2],
+              fromAssetName: atomicSwapDetails[3],
+              fromAssetUnits: (new BigNumber(atomicSwapDetails[4].toString())).dividedBy(addZeros(1, atomicSwapDetails[5].toString())).toFixed(parseInt(atomicSwapDetails[5].toString())).toString(),
+              fromAssetId: atomicSwapDetails[6],
+              fromLockPeriod: lockPeriod.toString(),
+              toAssetType: atomicSwapOtherChainDetails[0],
+              toAssetName: atomicSwapOtherChainDetails[1],
+              toAssetUnits: (new BigNumber(atomicSwapOtherChainDetails[2].toString())).dividedBy(addZeros(1, atomicSwapOtherChainDetails[3].toString())).toFixed(parseInt(atomicSwapOtherChainDetails[3].toString())).toString(),
+              toAssetId: atomicSwapOtherChainDetails[4],
+              toGenesisBlockHash: atomicSwapOtherChainDetails[5],
+              status: atomicSwapStatus.toString(),
+              secret: atomicSwapSecret,
+              eventHash: sha256(JSON.stringify(events[count])),
+              eventName: "assetLocked",
+              transactionHash: events[count].transactionHash,
+              timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
         }
       }
+
+      resolve();
+    } catch (e) {
+      reject(e)
     }
   });
 }
@@ -1181,137 +1196,78 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
   return new Promise(async (resolve, reject) => {
     var streamsContract = web3.eth.contract(streamsContractABI);
     var streams = streamsContract.at(streamsContractAddress);
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "published") {
-        async function fetchAndWriteEncryptedData(streamName, key, encryptedDataHash, privateKey, publicKey, ownerPublicKey, transactionHash) {
-          let dataObj = await queryImpulse({
-            "metadata.streamName": streamName,
-            "metadata.key": key,
-            "encryptedDataHash": encryptedDataHash
-          }, privateKey, publicKey, ownerPublicKey);
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "published") {
+          async function fetchAndWriteEncryptedData(streamName, key, encryptedDataHash, privateKey, publicKey, ownerPublicKey, transactionHash) {
+            let dataObj = await queryImpulse({
+              "metadata.streamName": streamName,
+              "metadata.key": key,
+              "encryptedDataHash": encryptedDataHash
+            }, privateKey, publicKey, ownerPublicKey);
 
 
-          let cipherText = dataObj.queryResult[0].encryptedData;
-          let capsule = dataObj.queryResult[0].capsule;
-          let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
+            let cipherText = dataObj.queryResult[0].encryptedData;
+            let capsule = dataObj.queryResult[0].capsule;
+            let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
-          if (plainObj) {
-            await upsertStreamItem({
-              streamName: events[count].args.streamName,
-              streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
-            }, {
-              key: plainObj.key,
-              data: plainObj.value
-            })
+            if (plainObj) {
+              await upsertStreamItem({
+                streamName: events[count].args.streamName,
+                streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
+              }, {
+                key: plainObj.key,
+                data: plainObj.value
+              })
 
-            await notifyClient({
-              streamName: events[count].args.streamName,
-              eventHash: sha256(JSON.stringify(events[count])),
-              eventName: "assetLocked",
-              key: plainObj.key,
-              data: plainObj.value,
-              transactionHash: events[count].transactionHash,
-              timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-            })
+              await notifyClient({
+                streamName: events[count].args.streamName,
+                eventHash: sha256(JSON.stringify(events[count])),
+                eventName: "assetLocked",
+                key: plainObj.key,
+                data: plainObj.value,
+                transactionHash: events[count].transactionHash,
+                timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+              })
+            }
           }
-        }
 
-        try {
-          let publicKey = events[count].args.ownerPublicKey
-          let keyPair = await searchEncryptionKey({
-            compressed_public_key_hex: base64ToHex(publicKey)
-          })
+          try {
+            let publicKey = events[count].args.ownerPublicKey
+            let keyPair = await searchEncryptionKey({
+              compressed_public_key_hex: base64ToHex(publicKey)
+            })
 
-          if (keyPair) {
-            console.log("You are the owner daya the data")
-            fetchAndWriteEncryptedData(
-              events[count].args.streamName,
-              events[count].args.key,
-              events[count].args.data,
-              keyPair.private_key_hex,
-              keyPair.compressed_public_key_hex,
-              keyPair.compressed_public_key_hex,
-              events[count].transactionHash
-            )
-
-          } else {
-            //see if you have access
-            let hasAccess = events[count].args.receiverPublicKeys.split(",").includes(hexToBase64(impulse.publicKey))
-            let publicKeyOwner = events[count].args.ownerPublicKey
-
-            if (hasAccess) {
-              let privateKey = impulse.privateKey;
-              let publicKey = impulse.publicKey;
-
+            if (keyPair) {
+              console.log("You are the owner daya the data")
               fetchAndWriteEncryptedData(
                 events[count].args.streamName,
                 events[count].args.key,
                 events[count].args.data,
-                privateKey,
-                publicKey,
-                base64ToHex(publicKeyOwner),
+                keyPair.private_key_hex,
+                keyPair.compressed_public_key_hex,
+                keyPair.compressed_public_key_hex,
                 events[count].transactionHash
               )
-            }
-          }
-        } catch (e) {
-          reject(e)
-          return;
-        }
-      }
-    }
-  });
-}
 
-async function clearAtomicSwaps(web3, blockNumber, network, events) {
-  return new Promise(async (resolve, reject) => {
-    var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
-    var atomicSwap = atomicSwapContract.at(network.atomicSwapContractAddress);
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "assetLocked") {
-        let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
-        let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
-        let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
-        let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
-        let genesisBlockHash = atomicSwap.genesisBlockHash.call();
+            } else {
+              //see if you have access
+              let hasAccess = events[count].args.receiverPublicKeys.split(",").includes(hexToBase64(impulse.publicKey))
+              let publicKeyOwner = events[count].args.ownerPublicKey
 
-        if (genesisBlockHash != atomicSwapOtherChainDetails[5]) {
-          try {
-            let secretDoc = await searchSecret({
-              instanceId: network.instanceId,
-              hash: events[count].args.hash
-            });
+              if (hasAccess) {
+                let privateKey = impulse.privateKey;
+                let publicKey = impulse.publicKey;
 
-            if (secretDoc) {
-              await claimTxn(web3, network.atomicSwapContractAddress, events[count].args.hash, secretDoc.secret);
-            }
-          } catch (e) {
-            reject(e)
-            return;
-          }
-        }
-      } else if (events[count].event === "assetClaimed") {
-        let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
-        let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
-        let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
-        let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
-        let genesisBlockHash = atomicSwap.genesisBlockHash.call();
-
-        if (genesisBlockHash != atomicSwapOtherChainDetails[5]) {
-          try {
-            let acceptedOrder = await searchAcceptedOrder({
-              buyerInstanceId: network.instanceId,
-              hash: events[count].args.hash
-            });
-
-            if (acceptedOrder) {
-              let other_network = await searchNetwork({
-                instanceId: acceptedOrder.instanceId
-              });
-
-              if (other_network) {
-                let web3_other = new Web3(new Web3.providers.HttpProvider(`http://${other_network.workerNodeIP}:${other_network.rpcNodePort}`));
-                await claimTxn(web3_other, other_network.atomicSwapContractAddress, events[count].args.hash, atomicSwapSecret);
+                fetchAndWriteEncryptedData(
+                  events[count].args.streamName,
+                  events[count].args.key,
+                  events[count].args.data,
+                  privateKey,
+                  publicKey,
+                  base64ToHex(publicKeyOwner),
+                  events[count].transactionHash
+                )
               }
             }
           } catch (e) {
@@ -1320,6 +1276,77 @@ async function clearAtomicSwaps(web3, blockNumber, network, events) {
           }
         }
       }
+
+      resolve();
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
+async function clearAtomicSwaps(web3, blockNumber, network, events) {
+  return new Promise(async (resolve, reject) => {
+    var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
+    var atomicSwap = atomicSwapContract.at(network.atomicSwapContractAddress);
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "assetLocked") {
+          let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
+          let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
+          let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
+          let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
+          let genesisBlockHash = atomicSwap.genesisBlockHash.call();
+
+          if (genesisBlockHash != atomicSwapOtherChainDetails[5]) {
+            try {
+              let secretDoc = await searchSecret({
+                instanceId: network.instanceId,
+                hash: events[count].args.hash
+              });
+
+              if (secretDoc) {
+                await claimTxn(web3, network.atomicSwapContractAddress, events[count].args.hash, secretDoc.secret);
+              }
+            } catch (e) {
+              reject(e)
+              return;
+            }
+          }
+        } else if (events[count].event === "assetClaimed") {
+          let atomicSwapDetails = atomicSwap.atomicSwapDetails.call(events[count].args.hash);
+          let atomicSwapOtherChainDetails = atomicSwap.atomicSwapOtherChainDetails.call(events[count].args.hash);
+          let atomicSwapStatus = atomicSwap.atomicSwapStatus.call(events[count].args.hash);
+          let atomicSwapSecret = atomicSwap.atomicSwapSecret.call(events[count].args.hash);
+          let genesisBlockHash = atomicSwap.genesisBlockHash.call();
+
+          if (genesisBlockHash != atomicSwapOtherChainDetails[5]) {
+            try {
+              let acceptedOrder = await searchAcceptedOrder({
+                buyerInstanceId: network.instanceId,
+                hash: events[count].args.hash
+              });
+
+              if (acceptedOrder) {
+                let other_network = await searchNetwork({
+                  instanceId: acceptedOrder.instanceId
+                });
+
+                if (other_network) {
+                  let web3_other = new Web3(new Web3.providers.HttpProvider(`http://${other_network.workerNodeIP}:${other_network.rpcNodePort}`));
+                  await claimTxn(web3_other, other_network.atomicSwapContractAddress, events[count].args.hash, atomicSwapSecret);
+                }
+              }
+            } catch (e) {
+              reject(e)
+              return;
+            }
+          }
+        }
+      }
+
+      resolve();
+    } catch (e) {
+      reject(e)
     }
   });
 }
@@ -1328,32 +1355,38 @@ async function updateStreamsList(web3, blockNumber, instanceId, streamsContractA
   return new Promise(async (resolve, reject) => {
     var streamsContract = web3.eth.contract(streamsContractABI);
     var streams = streamsContract.at(streamsContractAddress);
-    for (let count = 0; count < events.length; count++) {
-      if (events[count].event === "created") {
-        try {
-          await upsertStream({
-            streamName: events[count].args.streamName,
-          }, {
-            streamNameHash: events[count].args.streamNameHash,
-            admin: events[count].args.admin,
-            description: events[count].args.description
-          })
+    try {
+      for (let count = 0; count < events.length; count++) {
+        if (events[count].event === "created") {
+          try {
+            await upsertStream({
+              streamName: events[count].args.streamName,
+            }, {
+              streamNameHash: events[count].args.streamNameHash,
+              admin: events[count].args.admin,
+              description: events[count].args.description
+            })
 
-          await notifyClient({
-            streamName: events[count].args.streamName,
-            streamNameHash: events[count].args.streamNameHash,
-            admin: events[count].args.admin,
-            eventHash: sha256(JSON.stringify(events[count])),
-            eventName: "created",
-            description: events[count].args.description,
-            transactionHash: events[count].transactionHash,
-            timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-          })
-        } catch (e) {
-          reject(e)
-          return;
+            await notifyClient({
+              streamName: events[count].args.streamName,
+              streamNameHash: events[count].args.streamNameHash,
+              admin: events[count].args.admin,
+              eventHash: sha256(JSON.stringify(events[count])),
+              eventName: "created",
+              description: events[count].args.description,
+              transactionHash: events[count].transactionHash,
+              timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+            })
+          } catch (e) {
+            reject(e)
+            return;
+          }
         }
       }
+
+      resolve();
+    } catch (e) {
+      reject(e)
     }
   });
 }
