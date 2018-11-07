@@ -557,7 +557,7 @@ async function getStreamsEvents(web3, blockNumber, instanceId, streamsContractAd
 }
 
 async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddress, impulse, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var assetsContract = web3.eth.contract(
       assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
@@ -686,7 +686,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 }
 
 async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsContractAddress, impulse, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var assetsContract = web3.eth.contract(
       assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
@@ -1023,7 +1023,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
 }
 
 async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var assetsContract = web3.eth.contract(assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
 
@@ -1111,7 +1111,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress,
 }
 
 async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
     var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
     var assetsContract = web3.eth.contract(assetsContractABI);
@@ -1178,7 +1178,7 @@ async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddr
 }
 
 async function indexStreams(web3, blockNumber, instanceId, streamsContractAddress, impulse, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var streamsContract = web3.eth.contract(streamsContractABI);
     var streams = streamsContract.at(streamsContractAddress);
     for (let count = 0; count < events.length; count++) {
@@ -1264,7 +1264,7 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
 }
 
 async function clearAtomicSwaps(web3, blockNumber, network, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
     var atomicSwap = atomicSwapContract.at(network.atomicSwapContractAddress);
     for (let count = 0; count < events.length; count++) {
@@ -1325,7 +1325,7 @@ async function clearAtomicSwaps(web3, blockNumber, network, events) {
 }
 
 async function updateStreamsList(web3, blockNumber, instanceId, streamsContractAddress, events) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     var streamsContract = web3.eth.contract(streamsContractABI);
     var streams = streamsContract.at(streamsContractAddress);
     for (let count = 0; count < events.length; count++) {
@@ -1538,6 +1538,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         if (blockToScan % 5 == 0) {
                           var peers = await getPeers(web3);
                           var authoritiesList = await fetchAuthoritiesList(web3)
+                          console.log("Authorities" + authoritiesList)
                         }
 
                         var set = {};
