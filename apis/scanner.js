@@ -529,11 +529,9 @@ async function getAtomicSwapEvents(web3, blockNumber, instanceId, atomicSwapCont
       toBlock: blockNumber
     });
     events.get(async function(error, events) {
-      console.log(error, events)
       if (error) {
         reject(error);
       } else {
-        console.log("event: " + events)
         resolve(events);
       }
     })
@@ -1553,6 +1551,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         if (node.assetsContractAddress) {
                           console.log("Started Indexing Solo Assets At: " + getFormattedDate())
                           let events = await getAssetsEvents(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                          console.log(typeof events)
+                          console.log(JSON.stringify(events))
                           await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, events)
                           await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
                           await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
@@ -1561,7 +1561,9 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 
                         if (node.atomicSwapContractAddress) {
                           let events = await getAtomicSwapEvents(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
-                          console.log("x" + events)
+                          console.log(typeof events)
+                          console.log(JSON.stringify(events))
+                          events = events || [];
                           await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress, events)
                           await clearAtomicSwaps(web3, blockToScan, node, events)
                         }
