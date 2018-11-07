@@ -529,6 +529,7 @@ async function getAtomicSwapEvents(web3, blockNumber, instanceId, atomicSwapCont
       toBlock: blockNumber
     });
     events.get(async function(error, events) {
+      console.log(error, events)
       if (error) {
         reject(error);
       } else {
@@ -1121,6 +1122,7 @@ async function indexAssets(web3, blockNumber, instanceId, assetsContractAddress,
 }
 
 async function indexOrders(web3, blockNumber, instanceId, atomicSwapContractAddress, assetsContractAddress, events) {
+  console.log(events)
   return new Promise(async (resolve, reject) => {
     var atomicSwapContract = web3.eth.contract(atomicSwapContractABI);
     var atomicSwap = atomicSwapContract.at(atomicSwapContractAddress);
@@ -1559,6 +1561,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 
                         if (node.atomicSwapContractAddress) {
                           let events = await getAtomicSwapEvents(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
+                          console.log("x" + events)
                           await indexOrders(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress, events)
                           await clearAtomicSwaps(web3, blockToScan, node, events)
                         }
@@ -1572,7 +1575,6 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         if (blockToScan % 5 == 0) {
                           var peers = await getPeers(web3);
                           var authoritiesList = await fetchAuthoritiesList(web3)
-                          console.log("Authorities" + authoritiesList)
                         }
 
                         var set = {};
