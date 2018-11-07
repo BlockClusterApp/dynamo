@@ -37,6 +37,28 @@ function addZeros(s, n) {
   return s;
 }
 
+function getFormattedDate() {
+    var date = new Date();
+
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hour = date.getHours();
+    var min = date.getMinutes();
+    var sec = date.getSeconds();
+
+    month = (month < 10 ? "0" : "") + month;
+    day = (day < 10 ? "0" : "") + day;
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    sec = (sec < 10 ? "0" : "") + sec;
+
+    var str = date.getFullYear() + "-" + month + "-" + day + "_" +  hour + ":" + min + ":" + sec;
+
+    /*alert(str);*/
+
+    return str;
+}
+
 // Hex to Base64
 function hexToBase64(str) {
   return btoa(String.fromCharCode.apply(null,
@@ -482,14 +504,17 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
     var assetsContract = web3.eth.contract(
       assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
+    console.log("Started Fetching Events at : " + getFormattedDate())
     var events = assets.allEvents({
       fromBlock: blockNumber,
       toBlock: blockNumber
     });
+    console.log("Ended Fetching Events at : " + getFormattedDate())
     events.get(async function(error, events) {
       if (error) {
         reject(error);
       } else {
+        console.log("Ended Get Fetching Events at : " + getFormattedDate())
         try {
           for (let count = 0; count < events.length; count++) {
             if (events[count].event === "soloAssetIssued") {
@@ -508,12 +533,14 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
             } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
               try {
+                console.log("Writing Single Date Started At: " + getFormattedDate())
                 await upsertSoloAsset({
                   assetName: events[count].args.assetName,
                   uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
                 }, {
                   [events[count].args.key]: parseAndConvertData(events[count].args.value)
                 })
+                console.log("Writing Single Date Ended At: " + getFormattedDate())
               } catch (e) {
                 reject(e)
                 return;
@@ -1539,10 +1566,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         totalTransactions = total.totalTransactions;
 
                         if (node.assetsContractAddress) {
+                          console.log("Started Indexing Solo Assets At: " + getFormattedDate())
                           await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress)
                           await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
                           await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse)
-                          var authoritiesList = await fetchAuthoritiesList(web3)
+                          console.log("Ended Indexing Solo Assets At: " + getFormattedDate())
                         }
 
                         if (node.atomicSwapContractAddress) {
@@ -1557,6 +1585,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 
                         if (blockToScan % 5 == 0) {
                           var peers = await getPeers(web3);
+                          var authoritiesList = await fetchAuthoritiesList(web3)
                         }
 
                         var set = {};
