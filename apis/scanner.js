@@ -581,14 +581,12 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
         } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
           try {
-            console.log("Started parsing: " + getFormattedDate())
             await upsertSoloAsset({
               assetName: events[count].args.assetName,
               uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
             }, {
               [events[count].args.key]: parseAndConvertData(events[count].args.value)
             })
-            console.log("Ended parsing: " + getFormattedDate())
           } catch (e) {
             reject(e)
             return;
@@ -694,13 +692,14 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
 async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsContractAddress, impulse, events) {
   return new Promise(async (resolve, reject) => {
-    var assetsContract = web3.eth.contract(
-      assetsContractABI);
+    var assetsContract = web3.eth.contract(assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
+    console.log("Started getting block: " + getFormattedDate())
     web3.eth.getBlock(blockNumber, async function(error, blockDetails) {
       if (error) {
         reject(error);
       } else {
+        console.log("Ended getting block: " + getFormattedDate())
         try {
           for (let count = 0; count < events.length; count++) {
             var eventHash = sha256(JSON.stringify(events[count]));
@@ -734,6 +733,7 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
               }
             } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
               try {
+                console.log("Update started: " + getFormattedDate())
                 await upsertSoloAssetAuditTrail({
                   assetName: events[count].args.assetName,
                   uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
@@ -746,6 +746,8 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                   transactionHash: events[count].transactionHash
                 })
 
+                console.log("Update ended A: " + getFormattedDate())
+
                 await notifyClient({
                   assetName: events[count].args.assetName,
                   uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
@@ -756,6 +758,8 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                   timestamp: parseInt(blockDetails.timestamp),
                   transactionHash: events[count].transactionHash
                 })
+
+                console.log("Update ended B: " + getFormattedDate())
               } catch (e) {
                 reject(e)
                 return;
