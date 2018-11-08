@@ -502,7 +502,7 @@ async function scanBlock(web3, blockNumber, totalSmartContracts, totalTransactio
 async function getAssetsEvents(web3, blockNumber, instanceId, assetsContractAddress) {
   return new Promise((resolve, reject) => {
     var assetsContract = web3.eth.contract(assetsContractABI);
-
+    console.log("Started getting events: " + getFormattedDate())
     var assets = assetsContract.at(assetsContractAddress);
     var events = assets.allEvents({
       fromBlock: blockNumber,
@@ -512,6 +512,7 @@ async function getAssetsEvents(web3, blockNumber, instanceId, assetsContractAddr
       if(error) {
         reject(error);
       } else {
+        console.log("Ended getting events: " + getFormattedDate())
         resolve(events)
       }
     })
@@ -562,6 +563,7 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
       assetsContractABI);
     var assets = assetsContract.at(assetsContractAddress);
     try {
+
       for (let count = 0; count < events.length; count++) {
         if (events[count].event === "soloAssetIssued") {
           try {
@@ -579,12 +581,14 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
         } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
           try {
+            console.log("Started parsing: " + getFormattedDate())
             await upsertSoloAsset({
               assetName: events[count].args.assetName,
               uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
             }, {
               [events[count].args.key]: parseAndConvertData(events[count].args.value)
             })
+            console.log("Ended parsing: " + getFormattedDate())
           } catch (e) {
             reject(e)
             return;
@@ -1548,8 +1552,11 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                         if (node.assetsContractAddress) {
                           console.log("Started Indexing Solo Assets At: " + getFormattedDate())
                           let events = await getAssetsEvents(web3, blockToScan, node.instanceId, node.assetsContractAddress)
+                          console.log("A: " + getFormattedDate())
                           await indexAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, events)
+                          console.log("B: " + getFormattedDate())
                           await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
+                          console.log("C: " + getFormattedDate())
                           await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
                           console.log("Ended Indexing Solo Assets At: " + getFormattedDate())
                         }
