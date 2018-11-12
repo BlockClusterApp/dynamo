@@ -5,7 +5,7 @@ then
 	screen -d -m bash -i -c "node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log"
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
-	screen -d -m ./indexer.sh
+	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -52,7 +52,7 @@ then
   screen -d -m bash -i -c 'node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log'
 	sleep 10;
   screen -d -m bash -i -c 'node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log'
-	screen -d -m ./indexer.sh
+	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
@@ -99,7 +99,7 @@ then
   screen -d -m bash -i -c "node ./apis/app.js 2>&1 | tee /dynamo/bcData/app.log"
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
-	screen -d -m ./indexer.sh
+	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
 	while true;
 	do
 		REMOTEHOST=127.0.0.1
