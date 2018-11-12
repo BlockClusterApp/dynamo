@@ -22,6 +22,7 @@ RUN sudo pip3 install pipenv
 RUN git clone https://github.com/nucypher/pyUmbral.git
 ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
 RUN cd pyUmbral && pipenv install --system --deploy --skip-lock --ignore-pipfile && python3 setup.py install
+RUN npm install mongo-dynamic-indexer -g
 
 COPY install.sh .
 COPY quorum-node.sh .
