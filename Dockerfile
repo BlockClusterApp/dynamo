@@ -27,9 +27,11 @@ RUN npm install mongo-dynamic-indexer -g --unsafe-perm
 COPY install.sh .
 COPY quorum-node.sh .
 COPY setup.sh .
+COPY indexer.sh .
 RUN chmod 755 quorum-node.sh
 RUN chmod 755 setup.sh
 RUN chmod 755 install.sh
+RUN chmod 755 indexer.sh
 
 RUN ./install.sh
 
