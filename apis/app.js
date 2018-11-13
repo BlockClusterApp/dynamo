@@ -1482,6 +1482,23 @@ app.post(`/assets/search`, (req, res) => {
   });
 })
 
+app.post(`/assets/count`, (req, res) => {
+  let query = req.body.$query || req.body;
+  let limit = req.body.$limit || 50;
+  let skip = req.body.$skip || 0;
+  let sort = req.body.$sort || {};
+
+  localDB.collection("soloAssets").find(query).sort(sort).skip(skip).limit(limit).count(function(err, count) {
+    if (err) {
+      res.send({
+        "error": "Count Error Occured"
+      })
+    } else {
+      res.send({"message": count})
+    }
+  });
+})
+
 app.post(`/assets/audit`, (req, res) => {
   var assetName = req.body.assetName;
   var uniqueIdentifier = req.body.uniqueIdentifier;
@@ -1498,6 +1515,23 @@ app.post(`/assets/audit`, (req, res) => {
       })
     } else {
       res.send(result)
+    }
+  });
+})
+
+app.post(`/streams/count`, (req, res) => {
+  let query = req.body.$query || req.body;
+  let limit = req.body.$limit || 50;
+  let skip = req.body.$skip || 0;
+  let sort = req.body.$sort || {};
+
+  localDB.collection("streamsItems").find(query).sort(sort).skip(skip).limit(limit).count(function(err, count) {
+    if (err) {
+      res.send({
+        "error": "Search Error Occured"
+      })
+    } else {
+      res.send({"message": count})
     }
   });
 })
