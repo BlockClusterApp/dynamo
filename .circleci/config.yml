@@ -1,7 +1,6 @@
 version: 2
 
 references:
-
   container_config: &container_config
     docker:
       - image: circleci/node:8.11
@@ -10,7 +9,7 @@ references:
   aws_container: &aws_container
     docker:
       - image: blockcluster/circleci-kubectl-base
-    working_directory: ~/repo  
+    working_directory: ~/repo
 
   restore_repo: &restore_repo
     restore_cache:
@@ -22,7 +21,7 @@ references:
       key: repo-dynamo-{{ .Branch }}-{{ .Revision }}
       paths:
         - .
- 
+
   deploy_tag_filters: &deploy_tag_filters
     filters:
       branches:
@@ -44,20 +43,35 @@ jobs:
     steps:
       - *restore_repo
       - run:
-          name: "Build start notification"
+          name: 'Build start notification'
           command: ./.circleci/build-start-notification.sh
       - setup_remote_docker:
           version: 17.11.0-ce
       - run:
-          name: "Docker build"
+          name: 'Docker build'
           command: ./.circleci/docker-build.sh
       - run:
-          name: "Docker push"
+          name: 'Docker push'
           command: ./.circleci/docker-push.sh
+
+  multi_region:
+    <<: *aws_container
+    steps:
+      - *restore_repo
+      - setup_remote_docker:
+          version: 17.11.0-ce
       - run:
-          name: "Network Update"
+          name: 'Uploading to all regions'
+          command: ./.circleci/upload-to-multi-region.sh
+
+  notify_update:
+    <<: *container_config
+    steps:
+      - *restore_repo
+      - run:
+          name: 'Network Update'
           command: ./.circleci/build-end-notification.sh
-        
+
 workflows:
   version: 2
   build-and-push:
@@ -67,6 +81,19 @@ workflows:
 
       - docker_push:
           <<: *deploy_tag_filters
-          requires: 
+          requires:
             - checkout_code
+          context: aws-creds
+
+      - multi_region:
+          <<: *deploy_tag_filters
+          requires:
+            - docker_push
+          context: aws-creds
+
+      - notify_update:
+          <<: *deploy_tag_filters
+          type: approval
+          requires:
+            - multi_region
           context: aws-creds
