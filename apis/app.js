@@ -2753,4 +2753,6 @@ app.post('/pre/getData', async (req, res) => {
   })
 })
 
-app.listen(6382)
+app.listen(6382, () => {
+  console.log("Listening on port 6382");
+});

@@ -126,3 +126,6 @@ then
   source ~/.bashrc
 fi
 GOPATH=$OLD_GOPATH
+
+
+npm install pm2 -g
