@@ -36,5 +36,5 @@ RUN mkdir ./apis
 ADD apis/package.json ./apis/package.json
 RUN cd apis && npm install
 ADD apis ./apis
-RUN cd apis && npm install
+RUN cd apis && npm install && npm -g install bitcore@4.1.0
 RUN mkdir bcData
