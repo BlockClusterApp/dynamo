@@ -9,9 +9,9 @@ var base64 = require('base-64');
 var Web3 = require("web3");
 var MongoClient = require("mongodb").MongoClient;
 var fs = require('fs');
-var lightwallet = require("eth-lightwallet");
 const Config = require('./config');
 const request = require('request');
+var ethUtil = require('ethereumjs-util');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -284,7 +284,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                           publicKey: compressed_public_key_hex
                                                         },
                                                         "nodeId": nodeId,
-                                                        "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
+                                                        "nodeEthAddress": "0x" + ethUtil.privateToAddress(Buffer.from(nodekey, 'hex')).toString('hex'),
                                                         "assetsContractAddress": process.env.assetsContractAddress,
                                                         "atomicSwapContractAddress": process.env.atomicSwapContractAddress,
                                                         "streamsContractAddress": process.env.streamsContractAddress,
@@ -399,7 +399,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                                                                             "genesisBlockHash": block.hash,
                                                                             "genesisBlock": genesis,
                                                                             "nodeKey": nodekey,
-                                                                            "nodeEthAddress": "0x" + lightwallet.keystore._computeAddressFromPrivKey(nodekey),
+                                                                            "nodeEthAddress": "0x" + ethUtil.privateToAddress(Buffer.from(nodekey, 'hex')).toString('hex'),
                                                                             "nodeId": nodeId,
                                                                             "status": "running",
                                                                             "impulse": {
