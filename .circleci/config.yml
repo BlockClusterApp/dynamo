@@ -72,6 +72,13 @@ jobs:
           name: 'Network Update'
           command: ./.circleci/build-end-notification.sh
 
+  check_approval:
+    <<: *container_config
+    steps:
+      - run:
+          name: 'Echo'
+          command: echo "ok"
+
 workflows:
   version: 2
   build-and-push:
@@ -91,9 +98,14 @@ workflows:
             - docker_push
           context: aws-creds
 
-      - notify_update:
+      - check_approval:
           <<: *deploy_tag_filters
           type: approval
           requires:
             - multi_region
+
+      - notify_update:
+          <<: *deploy_tag_filters
+          requires:
+            - check_approval
           context: aws-creds
