@@ -3,6 +3,7 @@ then
 	pkill screen
 	screen -d -m ./quorum-node.sh
 	pm2 start ./apis/app.js -i 2
+  pm2 start ./apis/scanner.js -i 1
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
@@ -28,20 +29,6 @@ then
 			echo "Failed due to 8545";
 	    exit
 		fi
-
-    if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
-			sleep 5;
-		else
-			echo "Failed due to 5742";
-	    exit
-		fi
-
-		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
-			sleep 5;
-		else
-			echo "Failed due to 6382";
-	    exit
-		fi
 	done
 fi
 
@@ -50,6 +37,7 @@ then
 	pkill screen
   screen -d -m ./quorum-node.sh $1 $2
   pm2 start ./apis/app.js -i 2
+  pm2 start ./apis/scanner.js -i 1
 	sleep 10;
   screen -d -m bash -i -c 'node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log'
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
@@ -75,20 +63,6 @@ then
 			echo "Failed due to 8545";
 	    exit
 		fi
-
-    if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
-			sleep 5;
-		else
-			echo "Failed due to 5742";
-	    exit
-		fi
-
-		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
-			sleep 5;
-		else
-			echo "Failed due to 6382";
-	    exit
-		fi
 	done
 fi
 
@@ -97,6 +71,7 @@ then
 	pkill screen
   screen -d -m ./quorum-node.sh $1 $2 $3
   pm2 start ./apis/app.js -i 2
+  pm2 start ./apis/scanner.js -i 1
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
@@ -120,20 +95,6 @@ then
 			sleep 5;
 		else
 			echo "Failed due to 8545";
-	    exit
-		fi
-
-    if nc -zv $REMOTEHOST $REMOTEPORTSCANNER; then
-			sleep 5;
-		else
-			echo "Failed due to 5742";
-	    exit
-		fi
-
-		if nc -zv $REMOTEHOST $REMOTEPORTREADFILE; then
-			sleep 5;
-		else
-			echo "Failed due to 6382";
 	    exit
 		fi
 	done
