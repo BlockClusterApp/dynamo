@@ -1,5 +1,4 @@
 let smartContracts = require("../smart-contracts/index.js");
-let scanner = require("./scanner.js");
 const express = require('express')
 const app = express()
 var MongoClient = require("mongodb").MongoClient;
