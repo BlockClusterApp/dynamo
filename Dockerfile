@@ -12,7 +12,9 @@ RUN apt-get install -y nodejs
 RUN mkdir /dynamo
 WORKDIR /dynamo
 
-RUN sudo apt-get install python3.6 && apt-get install -y python3-pip
+RUN wget https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz && tar xvf Python-3.6.3.tgz && cd Python-3.6.3 && ./configure --with-ensurepip=install --enable-optimizations && make -j8 && sudo make altinstall
+RUN sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev
+RUN apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
 RUN git clone https://github.com/nucypher/pyUmbral.git
 ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
