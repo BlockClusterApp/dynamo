@@ -16,7 +16,7 @@ RUN apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
 RUN git clone https://github.com/nucypher/pyUmbral.git
 ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
-RUN cd pyUmbral && git checkout b1389605c8b5c022c66ebb757b2ea58bf35bc0f1 && pipenv install --system --deploy --skip-lock --ignore-pipfile && python3 setup.py install
+RUN cd pyUmbral && git checkout 0b2bd8815c7e8b097bd36e760d51ee30fcf02185 && pipenv install --system --deploy --skip-lock --ignore-pipfile && python3 setup.py install
 RUN npm install mongo-dynamic-indexer -g --unsafe-perm
 
 COPY install.sh .
