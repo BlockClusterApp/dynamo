@@ -570,10 +570,12 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
         compressed_public_key_hex: publicKey
       }, function(err, keyPair) {
         if (!err && keyPair) {
+          console.log("Private Encryption Started")
           let compressed_public_key_base64 = Buffer.from(publicKey, 'hex').toString("base64")
 
           exec(`python3 /dynamo/apis/crypto-operations/encrypt.py ${compressed_public_key_base64} '${object}'`, (error, stdout, stderr) => {
             if (!error) {
+              console.log("No error 1")
               stdout = stdout.split(" ")
               let ciphertext = stdout[0].substr(2).slice(0, -1)
               let capsule = stdout[1].substr(2).slice(0, -2)
@@ -582,6 +584,8 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
               let signature = ec.sign(ciphertext_hash, keyPair.private_key_hex, "hex", {
                 canonical: true
               });
+
+              console.log("No error 2")
 
               request({
                 url: `${Config.getImpulseURL()}/writeObject`,
@@ -601,6 +605,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
                   capsule: capsule
                 }
               }, (error, result, body) => {
+                console.log(error)
                 if (!error) {
                   if (body.error) {
                     reject(body.error.toString())
@@ -612,6 +617,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
                 }
               })
             } else {
+              console.log(error)
               reject(error.toString())
             }
           })
@@ -677,6 +683,7 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
       try {
         encryptedArr.push(await encrypt(publicKey, object))
       } catch (e) {
+        console.log(e)
         res.send({
           "error": e
         })
