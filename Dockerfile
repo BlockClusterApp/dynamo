@@ -1,10 +1,11 @@
-FROM node:8.12
+FROM ubuntu:18.10
 EXPOSE 23000
 EXPOSE 8545
 EXPOSE 9001
 EXPOSE 6328
 RUN apt-get update && apt-get install -y --no-install-recommends apt-utils build-essential
-RUN apt-get install -y libdb-dev libleveldb-dev libsodium-dev zlib1g-dev libtinfo-dev
+RUN apt-get install -y libdb-dev libleveldb-dev libsodium-dev zlib1g-dev libtinfo-dev gnupg
+
 RUN apt-get install -y screen netcat git curl jq sudo
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs
@@ -12,8 +13,6 @@ RUN apt-get install -y nodejs
 RUN mkdir /dynamo
 WORKDIR /dynamo
 
-RUN wget https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz && tar xvf Python-3.6.3.tgz && cd Python-3.6.3 && ./configure --with-ensurepip=install --enable-optimizations && make -j8 && sudo make altinstall
-RUN sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev
 RUN apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
 RUN git clone https://github.com/nucypher/pyUmbral.git
