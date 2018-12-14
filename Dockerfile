@@ -12,11 +12,11 @@ RUN apt-get install -y nodejs
 RUN mkdir /dynamo
 WORKDIR /dynamo
 
-RUN apt-get install -y python3-pip
+RUN sudo apt-get install python3.6 && apt-get install -y python3-pip
 RUN sudo pip3 install pipenv
 RUN git clone https://github.com/nucypher/pyUmbral.git
 ENV LANGUAGE=en_US.UTF-8 LC_ALL=C.UTF-8 LANG=C.UTF-8
-RUN cd pyUmbral && git checkout b8f8ae05f6528e491df4464db39d9638d89900ad && pipenv install --system --deploy --skip-lock --ignore-pipfile && python3 setup.py install
+RUN cd pyUmbral && pipenv install --system --deploy --skip-lock --ignore-pipfile && python3 setup.py install
 RUN npm install mongo-dynamic-indexer -g --unsafe-perm
 
 COPY install.sh .
