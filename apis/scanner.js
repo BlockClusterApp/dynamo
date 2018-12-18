@@ -22,7 +22,9 @@ var localDB = null;
 var callbackURL = null;
 let impulseToken = null;
 
-app.listen(5742)
+app.listen(5742, () => {
+  console.log("Listening on port 5742");
+});
 
 process.on('uncaughtException', function(error) {
   console.log(error);
@@ -1525,7 +1527,12 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                     let blockToScan = 0;
                     let totalSmartContracts = 0;
 
+                    console.log('Started next block')
+
+                    
+
                     if (doc) {
+                      console.log('Doc', JSON.stringify(doc))
                       impulseToken = doc.impulseToken || '';
                       blockToScan = doc.blockToScan || 0;
                       totalSmartContracts = doc.totalSmartContracts || 0;
@@ -1542,11 +1549,16 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 
                     var blockStatus = await blockExists(web3, blockToScan); //if block doesn't exist it will throw error. For all other cases it will return true. Even if node is down
 
+                    console.log("Block Exists", blockToScan, blockStatus)
+
                     if (blockStatus == true) {
                       try {
                         let total = await scanBlock(web3, blockToScan, totalSmartContracts, totalTransactions)
                         totalSmartContracts = total.totalSmartContracts;
                         totalTransactions = total.totalTransactions;
+
+
+                        console.log('Block Scanned')
 
                         if (node.assetsContractAddress) {
                           let events = await getAssetsEvents(web3, blockToScan, node.instanceId, node.assetsContractAddress)
@@ -1554,6 +1566,8 @@ MongoClient.connect(Config.getMongoConnectionString(), {
                           await indexSoloAssets(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
                           await indexSoloAssetsForAudit(web3, blockToScan, node.instanceId, node.assetsContractAddress, node.impulse, events)
                         }
+
+                        console.log('Assets Scanned')
 
                         if (node.atomicSwapContractAddress) {
                           let events = await getAtomicSwapEvents(web3, blockToScan, node.instanceId, node.atomicSwapContractAddress)
