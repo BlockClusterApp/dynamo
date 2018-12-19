@@ -2,8 +2,7 @@ if [ $# -eq 0 ]
 then
 	pkill screen
 	screen -d -m ./quorum-node.sh
-	pm2 start ./apis/app.js -i 2
-  pm2 start ./apis/scanner.js -i 1
+  pm2 start ./apis/ecosystem.config.js
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
@@ -36,8 +35,7 @@ if [ $# -eq 2 ]
 then
 	pkill screen
   screen -d -m ./quorum-node.sh $1 $2
-  pm2 start ./apis/app.js -i 2
-  pm2 start ./apis/scanner.js -i 1
+  pm2 start ./apis/ecosystem.config.js
 	sleep 10;
   screen -d -m bash -i -c 'node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log'
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
@@ -70,8 +68,7 @@ if [ $# -eq 3 ]
 then
 	pkill screen
   screen -d -m ./quorum-node.sh $1 $2 $3
-  pm2 start ./apis/app.js -i 2
-  pm2 start ./apis/scanner.js -i 1
+  pm2 start ./apis/ecosystem.config.js
 	sleep 10;
   screen -d -m bash -i -c "node ./apis/init.js 2>&1 | tee /dynamo/bcData/init.log"
 	screen -d -m bash -i -c "./indexer.sh 2>&1 | tee /dynamo/bcData/indexer.log"
