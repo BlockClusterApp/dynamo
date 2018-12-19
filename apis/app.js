@@ -666,8 +666,15 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
       from: web3.eth.accounts[0]
     })[2];
 
+    delete req.body.private._id
+    delete req.body.private.status
+    delete req.body.private.owner
+
+
     for (let key in req.body.private) {
       let timestamp = Date.now();
+
+      
       let object = base64.encode(JSON.stringify({
         key: key,
         value: req.body.private[key],
@@ -698,6 +705,11 @@ app.post(`/assets/updateAssetInfo`, async (req, res) => {
   if (req.body.public) {
     let finalKey = "";
     let finalValue = "";
+    
+    delete req.body.public._id
+    delete req.body.public.status
+    delete req.body.public.owner
+
     for (let key in req.body.public) {
       finalKey = finalKey + key + "œ"
       finalValue = finalValue + req.body.public[key] + "œ"
