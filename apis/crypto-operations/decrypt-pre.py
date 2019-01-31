@@ -1,7 +1,7 @@
 import base64
 import sys
 from umbral import pre, keys
-from umbral.fragments import KFrag
+from umbral.kfrags import KFrag
 from umbral.config import default_curve
 from umbral.params import UmbralParameters
 
