@@ -736,28 +736,30 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
               }
             } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
               try {
-                await upsertSoloAssetAuditTrail({
-                  assetName: events[count].args.assetName,
-                  uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
-                  eventHash: eventHash
-                }, {
-                  eventName: "addedOrUpdatedSoloAssetExtraData",
-                  key: events[count].args.key,
-                  value: events[count].args.value,
-                  timestamp: parseInt(blockDetails.timestamp),
-                  transactionHash: events[count].transactionHash
-                })
-
-                await notifyClient({
-                  assetName: events[count].args.assetName,
-                  uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
-                  eventHash: eventHash,
-                  eventName: "addedOrUpdatedSoloAssetExtraData",
-                  key: events[count].args.key,
-                  value: events[count].args.value,
-                  timestamp: parseInt(blockDetails.timestamp),
-                  transactionHash: events[count].transactionHash
-                })
+                if(events[count].args.key) {
+                  await upsertSoloAssetAuditTrail({
+                    assetName: events[count].args.assetName,
+                    uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                    eventHash: eventHash
+                  }, {
+                    eventName: "addedOrUpdatedSoloAssetExtraData",
+                    key: events[count].args.key,
+                    value: events[count].args.value,
+                    timestamp: parseInt(blockDetails.timestamp),
+                    transactionHash: events[count].transactionHash
+                  })
+  
+                  await notifyClient({
+                    assetName: events[count].args.assetName,
+                    uniqueIdentifier: events[count].args.uniqueAssetIdentifier,
+                    eventHash: eventHash,
+                    eventName: "addedOrUpdatedSoloAssetExtraData",
+                    key: events[count].args.key,
+                    value: events[count].args.value,
+                    timestamp: parseInt(blockDetails.timestamp),
+                    transactionHash: events[count].transactionHash
+                  })
+                }
               } catch (e) {
                 reject(e)
                 return;
@@ -862,35 +864,37 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                       let plainObj = await decryptData(impulse.privateKey, impulse.publicKey, ownerPublicKey, capsule, cipherText, impulse.publicKey === ownerPublicKey, dataObj.derivationKey)
 
                       if (plainObj) {
-                        await upsertSoloAsset({
-                          assetName: pastEvents[iii].args.assetName,
-                          uniqueIdentifier: parseAndConvertData(pastEvents[iii].args.uniqueAssetIdentifier)
-                        }, {
-                          [plainObj.key]: plainObj.value
-                        })
-
-                        await upsertSoloAssetAuditTrail({
-                          assetName: pastEvents[iii].args.assetName,
-                          uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
-                          eventHash: sha256(JSON.stringify(pastEvents[iii]))
-                        }, {
-                          eventName: "addedOrUpdatedEncryptedDataObjectHash",
-                          timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
-                          transactionHash: pastEvents[iii].transactionHash,
-                          key: plainObj.key,
-                          value: plainObj.value
-                        })
-
-                        await notifyClient({
-                          assetName: pastEvents[iii].args.assetName,
-                          uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
-                          eventHash: sha256(JSON.stringify(pastEvents[iii])),
-                          eventName: "addedOrUpdatedEncryptedDataObjectHash",
-                          timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
-                          transactionHash: pastEvents[iii].transactionHash,
-                          key: plainObj.key,
-                          value: plainObj.value
-                        })
+                        if(plainObj.key) {
+                          await upsertSoloAsset({
+                            assetName: pastEvents[iii].args.assetName,
+                            uniqueIdentifier: parseAndConvertData(pastEvents[iii].args.uniqueAssetIdentifier)
+                          }, {
+                            [plainObj.key]: plainObj.value
+                          })
+  
+                          await upsertSoloAssetAuditTrail({
+                            assetName: pastEvents[iii].args.assetName,
+                            uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
+                            eventHash: sha256(JSON.stringify(pastEvents[iii]))
+                          }, {
+                            eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                            timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
+                            transactionHash: pastEvents[iii].transactionHash,
+                            key: plainObj.key,
+                            value: plainObj.value
+                          })
+  
+                          await notifyClient({
+                            assetName: pastEvents[iii].args.assetName,
+                            uniqueIdentifier: pastEvents[iii].args.uniqueAssetIdentifier,
+                            eventHash: sha256(JSON.stringify(pastEvents[iii])),
+                            eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                            timestamp: await getTimestampOfBlock(web3, pastEvents[iii].blockNumber),
+                            transactionHash: pastEvents[iii].transactionHash,
+                            key: plainObj.key,
+                            value: plainObj.value
+                          })
+                        }
                       }
                     }
                   }
@@ -949,28 +953,30 @@ async function indexSoloAssetsForAudit(web3, blockNumber, instanceId, assetsCont
                   let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
                   if (plainObj) {
-                    await upsertSoloAssetAuditTrail({
-                      assetName: assetName,
-                      uniqueIdentifier: uniqueAssetIdentifier,
-                      eventHash: eventHash
-                    }, {
-                      eventName: "addedOrUpdatedEncryptedDataObjectHash",
-                      timestamp: timestamp,
-                      transactionHash: transactionHash,
-                      key: plainObj.key,
-                      value: plainObj.value
-                    })
-
-                    await notifyClient({
-                      assetName: assetName,
-                      uniqueIdentifier: uniqueAssetIdentifier,
-                      eventHash: eventHash,
-                      eventName: "addedOrUpdatedEncryptedDataObjectHash",
-                      timestamp: timestamp,
-                      transactionHash: transactionHash,
-                      key: plainObj.key,
-                      value: plainObj.value
-                    })
+                    if(plainObj.key) {
+                      await upsertSoloAssetAuditTrail({
+                        assetName: assetName,
+                        uniqueIdentifier: uniqueAssetIdentifier,
+                        eventHash: eventHash
+                      }, {
+                        eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                        timestamp: timestamp,
+                        transactionHash: transactionHash,
+                        key: plainObj.key,
+                        value: plainObj.value
+                      })
+  
+                      await notifyClient({
+                        assetName: assetName,
+                        uniqueIdentifier: uniqueAssetIdentifier,
+                        eventHash: eventHash,
+                        eventName: "addedOrUpdatedEncryptedDataObjectHash",
+                        timestamp: timestamp,
+                        transactionHash: transactionHash,
+                        key: plainObj.key,
+                        value: plainObj.value
+                      })
+                    }
                   }
                 }
               }
@@ -1216,23 +1222,25 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
             let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
             if (plainObj) {
-              await upsertStreamItem({
-                streamName: events[count].args.streamName,
-                streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
-              }, {
-                key: plainObj.key,
-                data: plainObj.value
-              })
-
-              await notifyClient({
-                streamName: events[count].args.streamName,
-                eventHash: sha256(JSON.stringify(events[count])),
-                eventName: "assetLocked",
-                key: plainObj.key,
-                data: plainObj.value,
-                transactionHash: events[count].transactionHash,
-                timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
-              })
+              if(plainObj.key) {
+                await upsertStreamItem({
+                  streamName: events[count].args.streamName,
+                  streamTimestamp: (new BigNumber(events[count].args.timestamp.toString())).toNumber()
+                }, {
+                  key: plainObj.key,
+                  data: plainObj.value
+                })
+  
+                await notifyClient({
+                  streamName: events[count].args.streamName,
+                  eventHash: sha256(JSON.stringify(events[count])),
+                  eventName: "assetLocked",
+                  key: plainObj.key,
+                  data: plainObj.value,
+                  transactionHash: events[count].transactionHash,
+                  timestamp: await getTimestampOfBlock(web3, events[count].blockNumber)
+                })
+              }
             }
           }
 
