@@ -586,12 +586,15 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
 
         } else if (events[count].event === "addedOrUpdatedSoloAssetExtraData") {
           try {
-            await upsertSoloAsset({
-              assetName: events[count].args.assetName,
-              uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
-            }, {
-              [events[count].args.key]: parseAndConvertData(events[count].args.value)
-            })
+            if(events[count].args.key) {
+              await upsertSoloAsset({
+                assetName: events[count].args.assetName,
+                uniqueIdentifier: parseAndConvertData(events[count].args.uniqueAssetIdentifier)
+              }, {
+                [events[count].args.key]: parseAndConvertData(events[count].args.value)
+              })
+            }
+            
           } catch (e) {
             reject(e)
             return;
@@ -613,12 +616,14 @@ async function indexSoloAssets(web3, blockNumber, instanceId, assetsContractAddr
               let plainObj = await decryptData(privateKey, publicKey, ownerPublicKey, capsule, cipherText, publicKey === ownerPublicKey, dataObj.derivationKey)
 
               if (plainObj) {
-                await upsertSoloAsset({
-                  assetName: assetName,
-                  uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
-                }, {
-                  [plainObj.key]: parseAndConvertData(plainObj.value)
-                })
+                if(plainObj.key) {
+                  await upsertSoloAsset({
+                    assetName: assetName,
+                    uniqueIdentifier: parseAndConvertData(uniqueAssetIdentifier)
+                  }, {
+                    [plainObj.key]: parseAndConvertData(plainObj.value)
+                  })
+                }
               }
             }
           }
@@ -1252,16 +1257,17 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
 
             if (keyPair) {
               console.log("You are the owner daya the data")
-              fetchAndWriteEncryptedData(
-                events[count].args.streamName,
-                events[count].args.key,
-                events[count].args.data,
-                keyPair.private_key_hex,
-                keyPair.compressed_public_key_hex,
-                keyPair.compressed_public_key_hex,
-                events[count].transactionHash
-              )
-
+              if(events[count].args.key) {
+                fetchAndWriteEncryptedData(
+                  events[count].args.streamName,
+                  events[count].args.key,
+                  events[count].args.data,
+                  keyPair.private_key_hex,
+                  keyPair.compressed_public_key_hex,
+                  keyPair.compressed_public_key_hex,
+                  events[count].transactionHash
+                )
+              }
             } else {
               //see if you have access
               let hasAccess = events[count].args.receiverPublicKeys.split(",").includes(hexToBase64(impulse.publicKey))
@@ -1271,15 +1277,17 @@ async function indexStreams(web3, blockNumber, instanceId, streamsContractAddres
                 let privateKey = impulse.privateKey;
                 let publicKey = impulse.publicKey;
 
-                fetchAndWriteEncryptedData(
-                  events[count].args.streamName,
-                  events[count].args.key,
-                  events[count].args.data,
-                  privateKey,
-                  publicKey,
-                  base64ToHex(publicKeyOwner),
-                  events[count].transactionHash
-                )
+                if(events[count].args.key) {
+                  fetchAndWriteEncryptedData(
+                    events[count].args.streamName,
+                    events[count].args.key,
+                    events[count].args.data,
+                    privateKey,
+                    publicKey,
+                    base64ToHex(publicKeyOwner),
+                    events[count].transactionHash
+                  )
+                }
               }
             }
           } catch (e) {
