@@ -25,6 +25,7 @@ const EthereumTx = require('ethereumjs-tx')
 const EthereumUtil = require('ethereumjs-util')
 var abiDecoder = require('abi-decoder');
 var Web3 = require("web3");
+const morgan = require('morgan');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -124,6 +125,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 })
 
 app.use(bodyParser.json())
+app.use(morgan('dev'));
 
 async function getNonce(address) {
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
