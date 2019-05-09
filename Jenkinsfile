@@ -19,5 +19,10 @@ pipeline {
         sh './.circleci/upload-to-multi-region.sh'
       }
     }
+    stage('Notify finish') {
+      steps {
+        sh './.circleci/build-end-notification.sh'
+      }
+    }
   }
 }
