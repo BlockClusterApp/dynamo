@@ -25,6 +25,7 @@ const EthereumTx = require('ethereumjs-tx')
 const EthereumUtil = require('ethereumjs-util')
 var abiDecoder = require('abi-decoder');
 var Web3 = require("web3");
+const morgan = require('morgan');
 
 let instanceId = process.env.instanceId;
 let db = null;
@@ -124,6 +125,7 @@ MongoClient.connect(Config.getMongoConnectionString(), {
 })
 
 app.use(bodyParser.json())
+app.use(morgan('dev'));
 
 async function getNonce(address) {
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
@@ -1119,7 +1121,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
               }
             } else {
               res.send({
-                "error": "Unknown Error Occured"
+                "error": err.toString(),
               })
             }
           });
@@ -1132,7 +1134,7 @@ app.post(`/assets/placeOrder`, (req, res) => {
     } else {
       console.log(err);
       res.send({
-        "error": "Unknown Error Occured"
+        "error": err.toString()
       })
     }
   })
@@ -1383,13 +1385,13 @@ app.post(`/assets/fulfillOrder`, (req, res) => {
           }
         } else {
           res.send({
-            "error": "Unknown Error Occured"
+            "error": err.toString()
           })
         }
       })
     } else {
       res.send({
-        "error": err
+        "error": err.toString()
       })
     }
 
@@ -1631,7 +1633,7 @@ app.post(`/streams/grantAccessToPublish`, async (req, res) => {
         })
       } else {
         res.send({
-          "error": "An unknown error occured"
+          "error": error.toString()
         })
       }
     })
@@ -1668,7 +1670,7 @@ app.post(`/streams/revokeAccessToPublish`, async (req, res) => {
         })
       } else {
         res.send({
-          "error": "An unknown error occured"
+          "error": error.toString()
         })
       }
     })
@@ -1833,12 +1835,12 @@ app.post(`/streams/publish`, async (req, res) => {
 
         } catch (e) {
           res.send({
-            "error": e
+            "error": e.toString()
           })
         }
       } else {
         res.send({
-          "error": "An unknown error occured"
+          "error": err.toString()
         })
       }
     })
@@ -1913,7 +1915,7 @@ app.post(`/utility/vote`, (req, res) => {
   }, function(error, result) {
     if (error) {
       res.send({
-        "error": "An unknown error occured"
+        "error": error.toString()
       })
     } else {
       res.send({})
@@ -1931,7 +1933,7 @@ app.post(`/utility/unVote`, (req, res) => {
   }, function(error, result) {
     if (error) {
       res.send({
-        "error": "An unknown error occured"
+        "error": error.toString()
       })
     } else {
       res.send({})
@@ -1949,7 +1951,7 @@ app.post(`/utility/createAccount`, (req, res) => {
   }, function(error, result) {
     if (error) {
       res.send({
-        "error": "An unknown error occured"
+        "error": error.toString()
       })
     } else {
       web3.currentProvider.sendAsync({
@@ -1968,13 +1970,13 @@ app.post(`/utility/createAccount`, (req, res) => {
               res.send({})
             } else {
               res.send({
-                "error": "An unknown error occured"
+                "error": err.toString()
               })
             }
           })
         } else {
           res.send({
-            "error": "An unknown error occured"
+            "error": error.toString()
           })
         }
       })
@@ -2098,7 +2100,7 @@ app.get(`/transactions/audit`, async (req, res) => {
                 localDB.collection("contracts").find({}).toArray(function(err, result) {
                   if (err) {
                     res.send({
-                      "error": "Unknown Error Occured"
+                      "error": err.toString()
                     })
                   } else {
                     for (let count = 0; count < result.length; count++) {
@@ -2138,13 +2140,13 @@ app.get(`/transactions/audit`, async (req, res) => {
           }
         } else {
           res.send({
-            "error": "An unknown error occured"
+            "error": error.toString()
           })
         }
       })
     } else {
       res.send({
-        "error": "An unknown error occured"
+        "error": error.toString()
       })
     }
   })
