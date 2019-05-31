@@ -1889,7 +1889,10 @@ async function getDirSize(myFolder) {
 }
 
 app.post(`/utility/createIndex`, (req, res) => {
-  localDB.collection("soloAssets").ensureIndex(req.body.index,  (err, result) => { 
+  /*{
+    index: [{title: "text"}, {language_override: "en", "default_language": "en"}]
+  }*/
+  localDB.collection("soloAssets").createIndex(...req.body.index,  (err, result) => { 
     if(err) {
       res.send({
         "error": err.toString()
