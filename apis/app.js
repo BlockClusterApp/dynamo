@@ -1888,6 +1888,21 @@ async function getDirSize(myFolder) {
   })
 }
 
+app.post(`/utility/createIndex`, (req, res) => {
+  /*{
+    index: [{title: "text"}, {language_override: "en", "default_language": "en"}]
+  }*/
+  localDB.collection("soloAssets").createIndex(...req.body.index,  (err, result) => { 
+    if(err) {
+      res.send({
+        "error": err.toString()
+      })
+    } else {
+      res.send({"message": "Index created"})
+    }      
+  });
+})
+
 app.post(`/utility/vote`, (req, res) => {
   let web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
   web3.currentProvider.sendAsync({
